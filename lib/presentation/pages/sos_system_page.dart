@@ -116,6 +116,9 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) throw Exception('Konum izni reddedildi.');
       }
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Konum izni kalıcı olarak reddedildi. Lütfen cihaz ayarlarından konumu açın.');
+      }
       
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       
@@ -349,6 +352,10 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
             setState(() { _isLoadingLocation = false; });
             return;
           }
+        }
+        if (permission == LocationPermission.deniedForever) {
+          setState(() { _isLoadingLocation = false; });
+          throw Exception('Konum izni kalıcı olarak reddedildi. Lütfen cihaz ayarlarından konumu açın.');
         }
 
         Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);

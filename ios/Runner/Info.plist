@@ -66,5 +66,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+    
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Konumunuz SOS ve erişilebilirlik raporu için gereklidir.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Sesli komutlar için mikrofon erişimi gereklidir.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Rapor için fotoğraf yüklemek üzere erişim gereklidir.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Rapor için fotoğraf çekmek üzere kamera erişimi gereklidir.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Sesli arama özelliği için konuşma tanıma gereklidir.</string>
 </dict>
 </plist>

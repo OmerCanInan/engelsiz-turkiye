@@ -54,11 +54,6 @@ class AuthGate extends StatelessWidget {
         
         final session = snapshot.data?.session;
         if (session != null) {
-          // ADMIN Kontrolü (Hızlı Check)
-          if (session.user.email == 'admin@erisimturkiye.com') {
-            return const AdminPanelPage();
-          }
-
           // Kullanıcı giriş yaptı ama Şirket/Kullanıcı onay durumu nedir?
           return FutureBuilder(
             future: Supabase.instance.client.from('profiles').select('role, approval_status').eq('id', session.user.id).maybeSingle(),
@@ -81,6 +76,11 @@ class AuthGate extends StatelessWidget {
               if (profileSnapshot.hasData && profileSnapshot.data != null) {
                 final role = profileSnapshot.data!['role'];
                 final status = profileSnapshot.data!['approval_status'];
+
+                // Güvenli Admin Kontrolü
+                if (role == 'admin') {
+                  return const AdminPanelPage();
+                }
 
                 // SADECE şirketler için onay kontrolü yap
                 if (role == 'company' && status == 'pending') {

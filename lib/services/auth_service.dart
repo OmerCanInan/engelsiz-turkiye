@@ -41,7 +41,7 @@ class AuthService {
           'phone_number': phone,
         });
       } catch (e) {
-        debugPrint('Profile Insert Hatası (Önemsiz): $e');
+        throw AuthException('Profil oluşturulamadı, veritabanı şemasını kontrol edin: $e');
       }
     }
 

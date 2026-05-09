@@ -49,6 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _loadCompanyJobs() {
+    if (_userId == null) return;
     setState(() {
       _companyJobsFuture = _supabase
           .from('jobs')
@@ -59,6 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _loadUserApplications() {
+    if (_userId == null) return;
     setState(() {
       _userApplicationsFuture = _supabase
           .from('job_applications')
@@ -69,6 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _loadMyDevices() {
+    if (_userId == null) return;
     setState(() {
       _myDevicesFuture = _supabase
           .from('support_devices')
@@ -79,6 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _loadMyDeviceApplications() {
+    if (_userId == null) return;
     setState(() {
       _myDeviceApplicationsFuture = _supabase
           .from('device_applications')

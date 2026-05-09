@@ -47,8 +47,11 @@ class JobRepository {
     required List<String> requirements,
   }) async {
     try {
+      final user = _client.auth.currentUser;
+      if (user == null) throw Exception('Kullanıcı oturumu bulunamadı.');
+
       await _client.from('jobs').insert({
-        'company_id': _client.auth.currentUser!.id,
+        'company_id': user.id,
         'title': title,
         'company_name': companyName,
         'description': description,

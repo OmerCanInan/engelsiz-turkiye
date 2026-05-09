@@ -6,13 +6,15 @@ class ReportRepository {
   final SupabaseClient _client = Supabase.instance.client;
 
   Future<List<AccessibilityReport>> getReports() async {
-    // PostGIS koordinatlarını çekerken st_asgeojson veya benzeri bir fonksiyon lazım olabilir
-    // Ancak Supabase RPC veya direkt select ile geojson formatında veri alabiliriz.
-    final response = await _client
-        .from('reports')
-        .select('*, location');
-    
-    return (response as List).map((r) => AccessibilityReport.fromMap(r)).toList();
+    try {
+      final response = await _client
+          .from('reports')
+          .select('*, location');
+      
+      return (response as List).map((r) => AccessibilityReport.fromMap(r)).toList();
+    } catch (e) {
+      throw Exception('Raporlar yüklenirken bir hata oluştu: $e');
+    }
   }
 
   Future<void> createReport({
@@ -22,18 +24,23 @@ class ReportRepository {
     required LatLng location,
     String? imageUrl,
   }) async {
-    final userId = _client.auth.currentUser?.id;
-    
-    // PostGIS için POINT(long lat) formatı
-    final pointString = 'POINT(${location.longitude} ${location.latitude})';
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) throw Exception('Oturum bulunamadı.');
+      
+      // PostGIS için POINT(long lat) formatı
+      final pointString = 'POINT(${location.longitude} ${location.latitude})';
 
-    await _client.from('reports').insert({
-      'user_id': userId,
-      'title': title,
-      'description': description,
-      'category': category,
-      'location': pointString,
-      'image_url': imageUrl,
-    });
+      await _client.from('reports').insert({
+        'user_id': userId,
+        'title': title,
+        'description': description,
+        'category': category,
+        'location': pointString,
+        'image_url': imageUrl,
+      });
+    } catch (e) {
+      throw Exception('Rapor oluşturulamadı: $e');
+    }
   }
 }
