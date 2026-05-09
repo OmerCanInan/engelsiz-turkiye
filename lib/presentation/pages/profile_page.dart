@@ -570,15 +570,15 @@ class _ProfilePageState extends State<ProfilePage> {
         final response = await _supabase.from('support_devices').delete().eq('id', deviceId).select();
         
         if (response.isEmpty) {
-           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silinemedi: İlan size ait değil veya RLS/Veritabanı ilişkisi hatası (ON DELETE CASCADE eksik olabilir).', backgroundColor: Colors.red)));
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silinemedi: İlan size ait değil veya RLS/Veritabanı ilişkisi hatası (ON DELETE CASCADE eksik olabilir).'), backgroundColor: Colors.red));
            return;
         }
         
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cihaz başarıyla silindi.', backgroundColor: Colors.green)));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cihaz başarıyla silindi.'), backgroundColor: Colors.green));
         _loadMyDevices();
         _fetchProfile(); // Genel verileri de yenile
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e', backgroundColor: Colors.red)));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red));
       }
     }
   }
