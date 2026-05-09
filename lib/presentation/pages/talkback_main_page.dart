@@ -14,9 +14,9 @@ class TalkbackMainPage extends StatelessWidget {
     // Görme engelliler için optimize edilmiş devasa butonlar ve lineer akış
     return Scaffold(
       appBar: AppBar(
-        title: const Semantics(
+        title: Semantics(
           header: true,
-          child: Text('Erişilebilir Türkiye - Ana Menü'),
+          child: const Text('Erişilebilir Türkiye - Ana Menü'),
         ),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
@@ -31,7 +31,7 @@ class TalkbackMainPage extends StatelessWidget {
             hint: 'Yakındaki gönüllülere SOS acil durum sinyali göndermek için çift dokunun.',
             color: Colors.red.shade900,
             icon: Icons.warning,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosSystemPage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SosSystemPage())),
           ),
           _buildTalkbackButton(
             context,
@@ -39,7 +39,7 @@ class TalkbackMainPage extends StatelessWidget {
             hint: 'Açık iş ilanlarını ve istihdam fırsatlarını görüntülemek için çift dokunun.',
             color: Colors.blue.shade900,
             icon: Icons.work,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmploymentPage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EmploymentPage())),
           ),
           _buildTalkbackButton(
             context,
@@ -47,7 +47,7 @@ class TalkbackMainPage extends StatelessWidget {
             hint: 'Sertifikalı eğitim programlarına katılmak için çift dokunun.',
             color: Colors.green.shade900,
             icon: Icons.school,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EducationPage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EducationPage())),
           ),
           _buildTalkbackButton(
             context,
@@ -55,7 +55,7 @@ class TalkbackMainPage extends StatelessWidget {
             hint: 'Engelli hakları rehberini dinlemek için çift dokunun.',
             color: Colors.purple.shade900,
             icon: Icons.gavel,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RightsGuidePage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RightsGuidePage())),
           ),
           _buildTalkbackButton(
             context,
@@ -63,7 +63,7 @@ class TalkbackMainPage extends StatelessWidget {
             hint: 'Profil ayarlarınızı yönetmek veya çıkış yapmak için çift dokunun.',
             color: Colors.orange.shade900,
             icon: Icons.person,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePage())),
           ),
         ],
       ),
