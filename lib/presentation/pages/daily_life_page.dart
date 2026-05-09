@@ -51,7 +51,7 @@ class _DailyLifePageState extends State<DailyLifePage> {
         )).toSet();
       });
     } catch (e) {
-      print('Hata: $e');
+      debugPrint('Hata: $e');
     }
   }
 

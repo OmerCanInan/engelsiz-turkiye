@@ -14,6 +14,13 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   void _handleLogin() async {
     setState(() => _isLoading = true);
     try {
@@ -36,13 +43,15 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // KLAVYE ÇÖKMESİNİ ÖNLER
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               const Icon(Icons.accessibility_new, size: 80, color: Color(0xFF1A56BE)),
               const SizedBox(height: 16),
               const Text(
@@ -92,6 +101,7 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

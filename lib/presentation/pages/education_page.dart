@@ -22,87 +22,55 @@ class _EducationPageState extends State<EducationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Eğitim ve Gelişim')),
+      appBar: AppBar(title: const Text('Eğitimler')),
       body: FutureBuilder<List<Course>>(
         future: _coursesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final courses = snapshot.data ?? [];
-          if (courses.isEmpty) {
-            return const Center(child: Text('Kurs bulunamadı.'));
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: courses.length,
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off, color: Colors.red, size: 60),
+                    const SizedBox(height: 16),
+                    const Text('Bağlantı veya Veri Hatası', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 8),
+                    Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => setState(() { _coursesFuture = _repository.getCourses(); }),
+                      child: const Text('TEKRAR DENE'),
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                          image: course.thumbnailUrl != null 
-                            ? DecorationImage(image: NetworkImage(course.thumbnailUrl!), fit: BoxFit.cover)
-                            : null,
-                        ),
-                        child: course.thumbnailUrl == null 
-                          ? const Center(child: Icon(Icons.school, size: 40, color: Colors.grey))
-                          : null,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            course.category.toUpperCase(),
-                            style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            course.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          const SizedBox(height: 8),
-                          if (course.isAccessibleContent)
-                            Row(
-                              children: const [
-                                Icon(Icons.check_circle, size: 14, color: Colors.green),
-                                SizedBox(width: 4),
-                                Text('Erişilebilir', style: TextStyle(fontSize: 12, color: Colors.green)),
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
+              ),
+            );
+          }
+
+          final courses = snapshot.data ?? [];
+          if (courses.isEmpty) {
+            return const Center(child: Text('Henüz eğitim bulunmuyor.'));
+          }
+
+          return ListView.builder(
+            itemCount: courses.length,
+            padding: const EdgeInsets.all(16),
+            itemBuilder: (context, index) {
+              final course = courses[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: ListTile(
+                  leading: const Icon(Icons.play_circle_fill, color: Colors.green, size: 40),
+                  title: Text(course.title),
+                  subtitle: Text(course.instructor),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {},
                 ),
               );
             },

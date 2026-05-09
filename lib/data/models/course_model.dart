@@ -10,7 +10,7 @@ class Course {
   Course({
     required this.id,
     required this.title,
-    required this.instructor,
+    required this.instructor, // Fallback ile güvenli hale getirildi
     required this.category,
     this.thumbnailUrl,
     required this.isAccessibleContent,
@@ -19,13 +19,15 @@ class Course {
 
   factory Course.fromMap(Map<String, dynamic> map) {
     return Course(
-      id: map['id'],
-      title: map['title'],
-      instructor: map['instructor'] ?? 'Anonim',
-      category: map['category'] ?? 'Genel',
+      id: map['id']?.toString() ?? '',
+      title: map['title']?.toString() ?? 'İsimsiz Kurs',
+      instructor: map['instructor']?.toString() ?? 'Anonim Eğitmen',
+      category: map['category']?.toString() ?? 'Genel',
       thumbnailUrl: map['thumbnail_url'],
       isAccessibleContent: map['is_accessible_content'] ?? true,
-      createdAt: DateTime.parse(map['created_at']),
+      createdAt: map['created_at'] != null 
+          ? DateTime.parse(map['created_at']) 
+          : DateTime.now(),
     );
   }
 }

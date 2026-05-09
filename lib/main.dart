@@ -6,21 +6,25 @@ import 'presentation/pages/login_page.dart';
 import 'presentation/pages/employment_page.dart';
 import 'presentation/pages/education_page.dart';
 import 'presentation/pages/daily_life_page.dart';
+import 'presentation/pages/profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // NOT: Buradaki URL ve Key değerlerini kendi Supabase panelinden almalısın.
-  await Supabase.initialize(
-    url: 'https://zdvpixlthhyyrwmvvypg.supabase.co',
-    anonKey: 'REMOVED_SUPABASE_ANON_KEY',
-  );
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
 
-  runApp(
-    const ProviderScope(
-      child: ErisilebilirTurkiyeApp(),
-    ),
-  );
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseKey,
+      debug: true,
+    );
+  } catch (e) {
+    debugPrint('Supabase Başlatma Hatası: $e');
+  }
+
+  runApp(const ProviderScope(child: ErisilebilirTurkiyeApp()));
 }
 
 class ErisilebilirTurkiyeApp extends StatelessWidget {
@@ -45,6 +49,11 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
+        // Bağlantı hatası veya bekleyen durum kontrolü
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        
         final session = snapshot.data?.session;
         if (session != null) {
           return const MainNavigationPage();
@@ -65,8 +74,9 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _selectedIndex = 0;
 
+  // Sayfaları burada tanımlayarak her seferinde yeniden oluşmasını engelliyoruz
   final List<Widget> _pages = [
-    const Center(child: Text('Ana Sayfa')),
+    const DashboardPage(),
     const EmploymentPage(),
     const EducationPage(),
     const DailyLifePage(),
@@ -76,7 +86,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: _pages[_selectedIndex], // Seçili sayfayı göster
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
@@ -85,67 +95,26 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           });
         },
         destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Ana Sayfa',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.work_outline),
-            selectedIcon: Icon(Icons.work),
-            label: 'İstihdam',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school),
-            label: 'Eğitim',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Günlük Hayat',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
+          NavigationDestination(icon: Icon(Icons.dashboard), label: 'Panel'),
+          NavigationDestination(icon: Icon(Icons.work), label: 'İşler'),
+          NavigationDestination(icon: Icon(Icons.school), label: 'Eğitim'),
+          NavigationDestination(icon: Icon(Icons.map), label: 'Harita'),
+          NavigationDestination(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
     );
   }
 }
 
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profilim')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-              child: const Icon(Icons.person, size: 50),
-            ),
-            const SizedBox(height: 16),
-            Text(user?.email ?? 'E-posta bulunamadı', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () => Supabase.instance.client.auth.signOut(),
-                child: const Text('ÇIKIŞ YAP'),
-              ),
-            ),
-          ],
-        ),
+      appBar: AppBar(title: const Text('Erişilebilir Türkiye')),
+      body: const Center(
+        child: Text('Dashboard Yüklendi. Lütfen menüden seçim yapın.'),
       ),
     );
   }

@@ -13,26 +13,27 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
-  String _selectedDisability = 'ortopedik';
-  double _percentage = 40;
+  bool _isLoading = false;
 
-  final List<Map<String, String>> _disabilityTypes = [
-    {'id': 'ortopedik', 'label': 'Ortopedik'},
-    {'id': 'gorme', 'label': 'Görme'},
-    {'id': 'isitme', 'label': 'İşitme'},
-    {'id': 'zihinsel', 'label': 'Zihinsel'},
-    {'id': 'diger', 'label': 'Diğer'},
-  ];
+  @override
+  void dispose() {
+    // MEM: Bellek sızıntısını önlemek için controller'lar dispose edilmeli
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
 
   void _handleRegister() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
       try {
         await AuthService().signUp(
           email: _emailController.text,
           password: _passwordController.text,
           fullName: _nameController.text,
-          disabilityType: _selectedDisability,
-          disabilityPercentage: _percentage.toInt(),
+          disabilityType: 'belirtilmedi', // Rapor gereği seçimleri kaldırdık
+          disabilityPercentage: 0,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -41,11 +42,17 @@ class _RegisterPageState extends State<RegisterPage> {
           Navigator.pop(context);
         }
       } catch (e) {
+        String message = 'Hata: $e';
+        if (e.toString().contains('429')) {
+          message = 'Çok fazla istek yapıldı. Lütfen birkaç dakika bekleyin.';
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Hata: $e')),
+            SnackBar(content: Text(message)),
           );
         }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -53,16 +60,17 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // KLAVYE ÇÖKMESİNİ ÖNLER
       appBar: AppBar(title: const Text('Yeni Hesap Oluştur')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Size daha iyi hizmet verebilmemiz için bilgilerinizi eksiksiz doldurun.',
+                'Erişilebilir Türkiye platformuna hoş geldiniz.',
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 32),
@@ -72,7 +80,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   labelText: 'Ad Soyad',
                   prefixIcon: Icon(Icons.person_outline),
                 ),
-                validator: (v) => v!.isEmpty ? 'Gerekli' : null,
+                validator: (v) => v!.isEmpty ? 'Ad soyad gerekli' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -81,7 +89,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   labelText: 'E-posta Adresi',
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
-                validator: (v) => v!.isEmpty ? 'Gerekli' : null,
+                validator: (v) => v!.isEmpty || !v.contains('@') ? 'Geçerli bir e-posta girin' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -91,42 +99,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   labelText: 'Şifre',
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
-                validator: (v) => v!.length < 6 ? 'En az 6 karakter' : null,
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'Engel Durumu',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _selectedDisability,
-                decoration: const InputDecoration(prefixIcon: Icon(Icons.accessibility)),
-                items: _disabilityTypes.map((type) {
-                  return DropdownMenuItem(
-                    value: type['id'],
-                    child: Text(type['label']!),
-                  );
-                }).toList(),
-                onChanged: (v) => setState(() => _selectedDisability = v!),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Engel Oranı: %${_percentage.toInt()}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Slider(
-                value: _percentage,
-                min: 40,
-                max: 100,
-                divisions: 12,
-                label: '%${_percentage.toInt()}',
-                onChanged: (v) => setState(() => _percentage = v),
+                validator: (v) => v!.length < 6 ? 'Şifre en az 6 karakter olmalı' : null,
               ),
               const SizedBox(height: 40),
               ElevatedButton(
-                onPressed: _handleRegister,
-                child: const Text('KAYIT OL'),
+                onPressed: _isLoading ? null : _handleRegister,
+                child: _isLoading 
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('KAYIT OL'),
               ),
             ],
           ),

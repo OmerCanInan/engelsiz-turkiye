@@ -12,11 +12,24 @@ class EmploymentPage extends StatefulWidget {
 class _EmploymentPageState extends State<EmploymentPage> {
   final _repository = JobRepository();
   late Future<List<Job>> _jobsFuture;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _jobsFuture = _repository.getJobs();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _jobsFuture = _repository.searchJobs(query);
+    });
   }
 
   @override
@@ -51,7 +64,26 @@ class _EmploymentPageState extends State<EmploymentPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Hata: ${snapshot.error}'));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                    const SizedBox(height: 16),
+                    const Text('PostgreSQL Veritabanı Hatası', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 8),
+                    Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => setState(() { _jobsFuture = _repository.getJobs(); }),
+                      child: const Text('TEKRAR DENE'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           final jobs = snapshot.data ?? [];
           if (jobs.isEmpty) {
