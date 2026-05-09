@@ -13,10 +13,21 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
   late TabController _tabController;
   final _supabase = Supabase.instance.client;
 
+  Future<List<dynamic>>? _companiesFuture;
+  Future<List<dynamic>>? _educationsFuture;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadData();
+  }
+
+  void _loadData() {
+    setState(() {
+      _companiesFuture = _supabase.from('profiles').select().eq('role', 'company').eq('approval_status', 'pending');
+      _educationsFuture = _supabase.from('education_materials').select().eq('status', 'pending');
+    });
   }
 
   @override
@@ -34,6 +45,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
         backgroundColor: Colors.red.shade800,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+            tooltip: 'Yenile',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -65,7 +81,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
 
   Widget _buildCompanyApprovals() {
     return FutureBuilder<List<dynamic>>(
-      future: _supabase.from('profiles').select().eq('role', 'company').eq('approval_status', 'pending'),
+      future: _companiesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -91,8 +107,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 4),
-                    Text('Email: ${company['email'] ?? 'Belirtilmemiş'}'),
                     const SizedBox(height: 4),
                     Text('Açıklama: ${company['company_description'] ?? 'Belirtilmemiş'}', maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
@@ -122,7 +136,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
 
   Widget _buildEducationApprovals() {
     return FutureBuilder<List<dynamic>>(
-      future: _supabase.from('education_materials').select().eq('status', 'pending'),
+      future: _educationsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -181,8 +195,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
 
   Future<void> _updateCompanyStatus(dynamic id, String status) async {
     try {
-      await _supabase.from('profiles').update({'approval_status': status}).eq('id', id);
-      setState(() {});
+      final response = await _supabase.from('profiles').update({'approval_status': status}).eq('id', id).select();
+      if (response.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hata: Supabase yetkilendirme (RLS) kısıtlaması nedeniyle güncellenemedi.')));
+        return;
+      }
+      _loadData();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Şirket durumu: $status')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e')));
@@ -191,8 +209,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
 
   Future<void> _updateEduStatus(dynamic id, String status) async {
     try {
-      await _supabase.from('education_materials').update({'status': status}).eq('id', id);
-      setState(() {});
+      final response = await _supabase.from('education_materials').update({'status': status}).eq('id', id).select();
+      if (response.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hata: Supabase yetkilendirme (RLS) kısıtlaması nedeniyle güncellenemedi.')));
+        return;
+      }
+      _loadData();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Eğitim durumu: $status')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e')));
