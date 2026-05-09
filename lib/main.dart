@@ -10,6 +10,7 @@ import 'presentation/pages/daily_life_page.dart';
 import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/admin_panel_page.dart';
 import 'presentation/pages/talkback_main_page.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -114,6 +115,15 @@ class _ErisilebilirTurkiyeAppState extends State<ErisilebilirTurkiyeApp> with Wi
     return MaterialApp(
       title: 'Erişilebilir Türkiye',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('tr', 'TR'),
+      supportedLocales: const [
+        Locale('tr', 'TR'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: _isTalkBackOn ? talkbackTheme : AppTheme.lightTheme,
       home: const AuthGate(),
     );
