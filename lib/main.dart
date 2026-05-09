@@ -78,9 +78,33 @@ class AuthGate extends StatelessWidget {
                 if (status == 'pending') {
                   return const PendingApprovalPage();
                 }
+                // Profil var ve pending değilse Ana Menüye geç
+                return const MainNavigationPage();
               }
               
-              return const MainNavigationPage();
+              // Veri yoksa (Insert başarısız olmuşsa)
+              return Scaffold(
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 80, color: Colors.red),
+                        const SizedBox(height: 16),
+                        const Text('Kritik Profil Hatası', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        const Text('Veritabanında profiliniz oluşturulamadı. Lütfen "role", "company_description" ve "approval_status" sütunlarının Supabase panelinde "profiles" tablosuna eklendiğinden emin olun.', textAlign: TextAlign.center),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => Supabase.instance.client.auth.signOut(),
+                          child: const Text('Çıkış Yap ve Tekrar Dene'),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              );
             },
           );
         }
@@ -137,13 +161,11 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _selectedIndex = 0;
 
-  // Sayfaları burada tanımlayarak her seferinde yeniden oluşmasını engelliyoruz
+  // Yeni sekmeler: İstihdam, Günlük Hayat, Eğitim
   final List<Widget> _pages = [
-    const DashboardPage(),
     const EmploymentPage(),
-    const EducationPage(),
     const DailyLifePage(),
-    const ProfilePage(),
+    const EducationPage(),
   ];
 
   @override
@@ -158,11 +180,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           });
         },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard), label: 'Panel'),
-          NavigationDestination(icon: Icon(Icons.work), label: 'İşler'),
-          NavigationDestination(icon: Icon(Icons.school), label: 'Eğitim'),
-          NavigationDestination(icon: Icon(Icons.map), label: 'Harita'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Profil'),
+          NavigationDestination(icon: Icon(Icons.work_outline), label: 'İstihdam'),
+          NavigationDestination(icon: Icon(Icons.accessibility_new), label: 'Günlük Hayat'),
+          NavigationDestination(icon: Icon(Icons.school_outlined), label: 'Eğitim'),
         ],
       ),
     );
