@@ -145,7 +145,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     foregroundColor: Colors.red,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () => AuthService().signOut(),
+                  onPressed: () async {
+                    await AuthService().signOut();
+                    if (context.mounted) {
+                      // Çıkış yapınca üstteki sayfaları kapatıp ana sayfaya (LoginPage'e) dön
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                  },
                 ),
               ],
             ),
