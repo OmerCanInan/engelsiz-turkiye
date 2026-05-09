@@ -139,28 +139,7 @@ class JobDetailPage extends StatelessWidget {
           ],
         ),
         child: ElevatedButton(
-          onPressed: () async {
-            final user = Supabase.instance.client.auth.currentUser;
-            if (user == null) return;
-
-            try {
-              await Supabase.instance.client.from('job_applications').insert({
-                'user_id': user.id,
-                'job_id': job.id,
-              });
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Başvurunuz başarıyla iletildi!'), backgroundColor: Colors.green),
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Başvuru hatası: $e'), backgroundColor: Colors.red),
-                );
-              }
-            }
-          },
+          onPressed: () => _showApplicationForm(context),
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 56),
             backgroundColor: Colors.blue.shade700,
@@ -171,5 +150,117 @@ class JobDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showApplicationForm(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    String age = '';
+    String expectedSalary = '';
+    String experiences = '';
+    String coverLetter = '';
+    String contactEmail = '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 24, right: 24, top: 24,
+          ),
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('Başvuru Formu', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Yaşınız', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    onSaved: (v) => age = v ?? '',
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'İletişim E-posta Adresi', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) => v!.isEmpty ? 'Zorunlu alan' : null,
+                    onSaved: (v) => contactEmail = v ?? '',
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Maaş Beklentiniz (Aylık)', border: OutlineInputBorder()),
+                    onSaved: (v) => expectedSalary = v ?? '',
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Deneyimleriniz', border: OutlineInputBorder()),
+                    maxLines: 2,
+                    onSaved: (v) => experiences = v ?? '',
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Kendinizden Bahsedin (Ön Yazı)', border: OutlineInputBorder()),
+                    maxLines: 3,
+                    onSaved: (v) => coverLetter = v ?? '',
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (formKey.currentState!.validate()) {
+                        formKey.currentState!.save();
+                        Navigator.pop(ctx);
+                        await _submitApplication(context, age, contactEmail, expectedSalary, experiences, coverLetter);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+                    child: const Text('BAŞVURUYU TAMAMLA'),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _submitApplication(BuildContext context, String age, String email, String salary, String exp, String cover) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await Supabase.instance.client.from('job_applications').insert({
+        'user_id': user.id,
+        'job_id': job.id,
+        'age': age,
+        'contact_email': email,
+        'expected_salary': salary,
+        'experiences': exp,
+        'cover_letter': cover,
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Başvurunuz başarıyla iletildi!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Başvuru hatası: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 }

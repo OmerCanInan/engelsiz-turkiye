@@ -242,6 +242,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                IconButton(
+                                  icon: const Icon(Icons.visibility, color: Colors.blue),
+                                  tooltip: 'İncele',
+                                  onPressed: () => _showApplicantDetails(context, name, app),
+                                ),
                                 IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () => _updateStatus(app['id'], 'accepted')),
                                 IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => _updateStatus(app['id'], 'rejected')),
                               ],
@@ -256,6 +261,51 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showApplicantDetails(BuildContext context, String name, Map<String, dynamic> app) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$name - Başvuru Detayı'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _detailRow('Yaş:', app['age']),
+              _detailRow('E-posta:', app['contact_email']),
+              _detailRow('Beklenen Maaş:', app['expected_salary']),
+              const Divider(),
+              const Text('Deneyimler:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(app['experiences'] ?? 'Belirtilmemiş'),
+              const Divider(),
+              const Text('Ön Yazı:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(app['cover_letter'] ?? 'Belirtilmemiş'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('KAPAT')),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(value?.toString() ?? 'Belirtilmemiş')),
+        ],
       ),
     );
   }
