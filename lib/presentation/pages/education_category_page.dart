@@ -166,11 +166,16 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                                       'title': titleDesc,
                                       'publisher_name': publisherName,
                                       'media_url': publicUrl,
+                                      'status': 'pending', // Admin onayı için bekliyor
                                     });
 
                                     if (mounted) {
                                       Navigator.pop(ctx);
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eğitim başarıyla yüklendi!'), backgroundColor: Colors.green));
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                        content: Text('Eğitim başarıyla yüklendi! Admin onayından sonra yayınlanacaktır.'), 
+                                        backgroundColor: Colors.green,
+                                        duration: Duration(seconds: 4),
+                                      ));
                                       _loadEducations();
                                     }
                                   } catch (e) {
