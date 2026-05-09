@@ -122,7 +122,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   labelText: 'Telefon Numarası (SOS için önemli)',
                   prefixIcon: Icon(Icons.phone),
                 ),
-                validator: (v) => v!.isEmpty ? 'Lütfen telefon numaranızı girin' : null,
+                validator: (v) => null, // KVKK gereği isteğe bağlı bırakıldı
               ),
               const SizedBox(height: 16),
               TextFormField(

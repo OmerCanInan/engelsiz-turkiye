@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme.dart';
 import 'core/supabase_config.dart';
@@ -18,13 +18,13 @@ void main() async {
     await Supabase.initialize(
       url: SupabaseConfig.url,
       anonKey: SupabaseConfig.anonKey,
-      debug: true,
+      debug: kDebugMode,
     );
   } catch (e) {
     debugPrint('Supabase Başlatma Hatası: $e');
   }
 
-  runApp(const ProviderScope(child: ErisilebilirTurkiyeApp()));
+  runApp(const ErisilebilirTurkiyeApp());
 }
 
 class ErisilebilirTurkiyeApp extends StatelessWidget {
@@ -41,8 +41,27 @@ class ErisilebilirTurkiyeApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  Future<Map<String, dynamic>?>? _profileFuture;
+  String? _lastUserId;
+
+  void _fetchProfileIfNeeded(String userId) {
+    if (userId != _lastUserId) {
+      _lastUserId = userId;
+      _profileFuture = Supabase.instance.client
+          .from('profiles')
+          .select('role, approval_status')
+          .eq('id', userId)
+          .maybeSingle();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,9 +74,11 @@ class AuthGate extends StatelessWidget {
         
         final session = snapshot.data?.session;
         if (session != null) {
+          _fetchProfileIfNeeded(session.user.id);
+
           // Kullanıcı giriş yaptı ama Şirket/Kullanıcı onay durumu nedir?
           return FutureBuilder(
-            future: Supabase.instance.client.from('profiles').select('role, approval_status').eq('id', session.user.id).maybeSingle(),
+            future: _profileFuture,
             builder: (context, AsyncSnapshot<Map<String, dynamic>?> profileSnapshot) {
               if (profileSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(body: Center(child: CircularProgressIndicator()));
