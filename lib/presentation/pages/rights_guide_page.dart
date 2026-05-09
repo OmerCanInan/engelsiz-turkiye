@@ -34,7 +34,7 @@ class RightsGuidePage extends StatelessWidget {
         'title': 'EKPSS (Engelli Kamu Personeli Seçme Sınavı)',
         'icon': Icons.account_balance,
         'color': Colors.purple,
-        'desc': 'Kamuda memur olmak isteyen engelli bireyler için özel olarak düzenlenen EKPSS'ye girme ve kura ile devlet kadrolarına atanma hakkı mevcuttur.'
+        'desc': "Kamuda memur olmak isteyen engelli bireyler için özel olarak düzenlenen EKPSS'ye girme ve kura ile devlet kadrolarına atanma hakkı mevcuttur."
       },
       {
         'title': 'Evde Bakım Maaşı ve Engelli Aylığı',
