@@ -385,7 +385,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
     if (!_isListening || _myPosition == null) return;
 
     try {
-      final signals = await _supabase.from('sos_signals').select().eq('status', 'active');
+      final signals = await _supabase.from('sos_signals').select('*, profiles(phone_number)').eq('status', 'active');
       
       List<dynamic> nearbySignals = [];
       for (var sig in signals) {
@@ -481,27 +481,71 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
                       final dist = sig['distance'] as double;
                       final lat = sig['latitude'];
                       final lng = sig['longitude'];
+                      final phone = sig['profiles']?['phone_number'];
+
+                      String distanceText = dist > 1000 
+                          ? '${(dist / 1000).toStringAsFixed(1)} km' 
+                          : '${dist.toStringAsFixed(0)} metre';
 
                       return Card(
                         color: Colors.red.shade50,
                         margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: const CircleAvatar(backgroundColor: Colors.red, child: Icon(Icons.warning, color: Colors.white)),
-                          title: Text('ACİL YARDIM TALEBİ', style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold)),
-                          subtitle: Text('Uzaklık: ${dist.toStringAsFixed(0)} metre yakınınızda!'),
-                          trailing: ElevatedButton(
-                            onPressed: () async {
-                              final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red, 
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(100, 40), // Global temadaki double.infinity'yi eziyoruz
-                            ),
-                            child: const Text('HARİTADA AÇ'),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: const CircleAvatar(backgroundColor: Colors.red, child: Icon(Icons.warning, color: Colors.white)),
+                                title: Text('ACİL YARDIM TALEBİ', style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold)),
+                                subtitle: Text('Uzaklık: $distanceText yakınınızda!'),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  if (phone != null && phone.toString().isNotEmpty)
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                        child: ElevatedButton.icon(
+                                          onPressed: () async {
+                                            final uri = Uri.parse('tel:$phone');
+                                            if (await canLaunchUrl(uri)) {
+                                              await launchUrl(uri);
+                                            }
+                                          },
+                                          icon: const Icon(Icons.phone),
+                                          label: const Text('Kişiyi Ara'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green, 
+                                            foregroundColor: Colors.white,
+                                            minimumSize: const Size(0, 40),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                      child: ElevatedButton.icon(
+                                        onPressed: () async {
+                                          final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+                                          if (await canLaunchUrl(uri)) {
+                                            await launchUrl(uri);
+                                          }
+                                        },
+                                        icon: const Icon(Icons.map),
+                                        label: const Text('Haritada Aç'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red, 
+                                          foregroundColor: Colors.white,
+                                          minimumSize: const Size(0, 40),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            ],
                           ),
                         ),
                       );

@@ -14,6 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _descController = TextEditingController();
   bool _isLoading = false;
   bool _isCompany = false; // Şirket mi?
@@ -23,6 +24,7 @@ class _RegisterPageState extends State<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _phoneController.dispose();
     _descController.dispose();
     super.dispose();
   }
@@ -35,6 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
           email: _emailController.text,
           password: _passwordController.text,
           fullName: _nameController.text,
+          phone: _phoneController.text,
           isCompany: _isCompany,
           companyDescription: _isCompany ? _descController.text : null,
         );
@@ -110,6 +113,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   prefixIcon: Icon(Icons.person_outline),
                 ),
                 validator: (v) => v!.isEmpty ? 'Ad soyad veya kurum adı gerekli' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Telefon Numarası (SOS için önemli)',
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                validator: (v) => v!.isEmpty ? 'Lütfen telefon numaranızı girin' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
