@@ -74,37 +74,21 @@ class AuthGate extends StatelessWidget {
               }
               
               if (profileSnapshot.hasData && profileSnapshot.data != null) {
+                final role = profileSnapshot.data!['role'];
                 final status = profileSnapshot.data!['approval_status'];
-                if (status == 'pending') {
+                
+                // SADECE şirketler için onay kontrolü yap
+                if (role == 'company' && status == 'pending') {
                   return const PendingApprovalPage();
                 }
-                // Profil var ve pending değilse Ana Menüye geç
+                
+                // Normal kullanıcılar veya onaylı şirketler ana menüye geçer
                 return const MainNavigationPage();
               }
               
-              // Veri yoksa (Insert başarısız olmuşsa)
-              return Scaffold(
-                body: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 80, color: Colors.red),
-                        const SizedBox(height: 16),
-                        const Text('Kritik Profil Hatası', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 16),
-                        const Text('Veritabanında profiliniz oluşturulamadı. Lütfen "role", "company_description" ve "approval_status" sütunlarının Supabase panelinde "profiles" tablosuna eklendiğinden emin olun.', textAlign: TextAlign.center),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () => Supabase.instance.client.auth.signOut(),
-                          child: const Text('Çıkış Yap ve Tekrar Dene'),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              );
+              // Veri yoksa (Eski kullanıcılar veya hata durumu)
+              // Hackathon için kullanıcıyı engellemek yerine ana menüye alalım
+              return const MainNavigationPage();
             },
           );
         }
