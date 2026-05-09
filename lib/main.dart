@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme.dart';
+import 'core/supabase_config.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/employment_page.dart';
 import 'presentation/pages/education_page.dart';
@@ -11,13 +12,10 @@ import 'presentation/pages/profile_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
-
   try {
     await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseKey,
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
       debug: true,
     );
   } catch (e) {
@@ -49,15 +47,22 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        // Bağlantı hatası veya bekleyen durum kontrolü
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        
-        final session = snapshot.data?.session;
+        // Eğer cihazda halihazırda aktif bir oturum (session) varsa beklemeye gerek yok
+        final session = Supabase.instance.client.auth.currentSession;
         if (session != null) {
           return const MainNavigationPage();
         }
+
+        // Eğer veriler akmaya başladıysa veya hata varsa
+        if (snapshot.connectionState == ConnectionState.active) {
+          if (snapshot.data?.session != null) {
+            return const MainNavigationPage();
+          } else {
+            return const LoginPage();
+          }
+        }
+
+        // Kısa süreli bir bekleme anında bile LoginPage'i göster, takılı kalmasın
         return const LoginPage();
       },
     );
