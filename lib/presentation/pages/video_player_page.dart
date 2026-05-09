@@ -74,31 +74,36 @@ class _ControlsOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 50),
-          reverseDuration: const Duration(milliseconds: 200),
-          child: controller.value.isPlaying
-              ? const SizedBox.shrink()
-              : const ColoredBox(
-                  color: Colors.black26,
-                  child: Center(
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 100.0,
-                      semanticLabel: 'Oynat',
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: controller,
+      builder: (context, value, child) {
+        return Stack(
+          children: <Widget>[
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 50),
+              reverseDuration: const Duration(milliseconds: 200),
+              child: value.isPlaying
+                  ? const SizedBox.shrink()
+                  : const ColoredBox(
+                      color: Colors.black26,
+                      child: Center(
+                        child: Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 100.0,
+                          semanticLabel: 'Oynat',
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-        ),
-        GestureDetector(
-          onTap: () {
-            controller.value.isPlaying ? controller.pause() : controller.play();
-          },
-        ),
-      ],
+            ),
+            GestureDetector(
+              onTap: () {
+                value.isPlaying ? controller.pause() : controller.play();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
