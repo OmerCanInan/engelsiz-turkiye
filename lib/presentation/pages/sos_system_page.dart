@@ -390,10 +390,8 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       List<dynamic> nearbySignals = [];
       for (var sig in signals) {
         double dist = Geolocator.distanceBetween(_myPosition!.latitude, _myPosition!.longitude, sig['latitude'], sig['longitude']);
-        if (dist <= 10000) { // Sadece 10KM içindekiler (Hackathon)
-          sig['distance'] = dist;
-          nearbySignals.add(sig);
-        }
+        sig['distance'] = dist;
+        nearbySignals.add(sig); // Hackathon demosu için menzil kısıtlaması tamamen kaldırıldı
       }
 
       // Mesafeye göre sırala (En yakın en üstte)
@@ -441,7 +439,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
                       const SizedBox(height: 8),
                       Text(
                         _isListening 
-                          ? 'Şu anda 10 km çevrenizdeki SOS sinyalleri taranıyor. Acil durumlarda aşağıda belirecektir.'
+                          ? 'Şu anda sistemdeki tüm aktif SOS sinyalleri taranıyor. (Demo Modu)'
                           : 'Yakınınızdaki engelli bireylere yardım etmek için gönüllü modunu aktifleştirin.',
                       ),
                     ],
