@@ -5,6 +5,7 @@ import 'education_page.dart';
 import 'sos_system_page.dart';
 import 'rights_guide_page.dart';
 import 'profile_page.dart';
+import 'inbox_page.dart';
 
 class TalkbackMainPage extends StatelessWidget {
   const TalkbackMainPage({super.key});
@@ -55,7 +56,15 @@ class TalkbackMainPage extends StatelessWidget {
             hint: 'Engelli hakları rehberini dinlemek için çift dokunun.',
             color: Colors.purple.shade900,
             icon: Icons.gavel,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RightsGuidePage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RightsGuidePage())),
+          ),
+          _buildTalkbackButton(
+            context,
+            title: 'Bildirimler',
+            hint: 'Gelen bildirimlerinizi, mesajları ve başvuru sonuçlarını dinlemek için çift dokunun.',
+            color: Colors.teal.shade900,
+            icon: Icons.notifications,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InboxPage())),
           ),
           _buildTalkbackButton(
             context,

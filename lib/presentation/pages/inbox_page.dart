@@ -73,18 +73,49 @@ class _InboxPageState extends State<InboxPage> {
               final dateStr = DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(notif['created_at']).toLocal());
               final isRead = notif['is_read'] == true;
 
+              final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+              if (isTalkBack) {
+                return Semantics(
+                  label: '${notif['title']}. ${notif['content']}. ${dateStr} tarihinde gönderildi.',
+                  child: Card(
+                    color: Colors.blue.shade900,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.notifications, size: 40, color: Colors.white),
+                              const SizedBox(width: 16),
+                              Expanded(child: Text(notif['title'], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white))),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(notif['content'], style: const TextStyle(fontSize: 20, color: Colors.white)),
+                          const SizedBox(height: 16),
+                          Text(dateStr, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
               return Card(
                 elevation: isRead ? 0 : 2,
-                color: isRead ? Colors.grey.shade50 : Colors.blue.shade50,
+                color: isRead ? Theme.of(context).cardColor : Colors.blue.withOpacity(0.1),
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: isRead ? Colors.grey.shade300 : Colors.blue.shade200),
+                  side: BorderSide(color: isRead ? Colors.grey.withOpacity(0.3) : Colors.blue.withOpacity(0.5)),
                 ),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isRead ? Colors.grey.shade300 : Colors.blue,
-                    child: Icon(Icons.notifications, color: isRead ? Colors.grey.shade600 : Colors.white),
+                    backgroundColor: isRead ? Colors.grey.withOpacity(0.3) : Colors.blue,
+                    child: Icon(Icons.notifications, color: isRead ? Colors.grey : Colors.white),
                   ),
                   title: Text(notif['title'], style: TextStyle(fontWeight: isRead ? FontWeight.normal : FontWeight.bold)),
                   subtitle: Column(
