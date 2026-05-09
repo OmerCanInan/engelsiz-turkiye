@@ -35,6 +35,7 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
           .select()
           .eq('category', widget.categoryName)
           .eq('target_audience', widget.targetAudience)
+          .eq('status', 'approved') // Sadece onaylanan eğitimleri göster
           .order('created_at', ascending: false);
     });
   }

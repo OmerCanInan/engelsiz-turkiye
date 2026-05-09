@@ -8,6 +8,7 @@ import 'presentation/pages/employment_page.dart';
 import 'presentation/pages/education_page.dart';
 import 'presentation/pages/daily_life_page.dart';
 import 'presentation/pages/profile_page.dart';
+import 'presentation/pages/admin_panel_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +78,11 @@ class AuthGate extends StatelessWidget {
                 final role = profileSnapshot.data!['role'];
                 final status = profileSnapshot.data!['approval_status'];
                 
+                // ADMIN Kontrolü
+                if (session.user.email == 'admin@erisimturkiye.com') {
+                  return const AdminPanelPage();
+                }
+
                 // SADECE şirketler için onay kontrolü yap
                 if (role == 'company' && status == 'pending') {
                   return const PendingApprovalPage();
