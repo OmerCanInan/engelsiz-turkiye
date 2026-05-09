@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import 'register_page.dart';
+import '../../main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -127,6 +129,23 @@ class _LoginPageState extends State<LoginPage> {
                   );
                 },
                 child: const Text('Hesabınız yok mu? Kayıt Olun'),
+              ),
+              const SizedBox(height: 24),
+              ValueListenableBuilder<bool>(
+                valueListenable: accessibilityModeNotifier,
+                builder: (context, value, child) {
+                  return SwitchListTile(
+                    title: const Text('Görme Engelli Modu (Simülasyon)'),
+                    subtitle: const Text('Ekran okuyucu açmadan Talkback arayüzüne geçişi sağlar.'),
+                    value: value,
+                    activeColor: Colors.blue,
+                    onChanged: (bool val) async {
+                      accessibilityModeNotifier.value = val;
+                      final prefs = await SharedPreferences.getInstance();
+                      prefs.setBool('accessibility_mode', val);
+                    },
+                  );
+                },
               ),
             ],
           ),

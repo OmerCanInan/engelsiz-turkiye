@@ -11,8 +11,15 @@ import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/admin_panel_page.dart';
 import 'presentation/pages/talkback_main_page.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+final ValueNotifier<bool> accessibilityModeNotifier = ValueNotifier<bool>(false);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  final prefs = await SharedPreferences.getInstance();
+  accessibilityModeNotifier.value = prefs.getBool('accessibility_mode') ?? false;
 
   try {
     await Supabase.initialize(
@@ -110,20 +117,30 @@ class _AuthGateState extends State<AuthGate> {
                 }
                 
                 // Normal kullanıcılar veya onaylı şirketler ana menüye geçer
-                bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context);
-                if (isTalkBackOn) {
-                  return const TalkbackMainPage();
-                }
-                return const MainNavigationPage();
+                return ValueListenableBuilder<bool>(
+                  valueListenable: accessibilityModeNotifier,
+                  builder: (context, isManualModeOn, child) {
+                    bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context) || isManualModeOn;
+                    if (isTalkBackOn) {
+                      return const TalkbackMainPage();
+                    }
+                    return const MainNavigationPage();
+                  },
+                );
               }
               
               // Veri yoksa (Eski kullanıcılar veya hata durumu)
               // Hackathon için kullanıcıyı engellemek yerine ana menüye alalım
-              bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context);
-              if (isTalkBackOn) {
-                return const TalkbackMainPage();
-              }
-              return const MainNavigationPage();
+              return ValueListenableBuilder<bool>(
+                valueListenable: accessibilityModeNotifier,
+                builder: (context, isManualModeOn, child) {
+                  bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context) || isManualModeOn;
+                  if (isTalkBackOn) {
+                    return const TalkbackMainPage();
+                  }
+                  return const MainNavigationPage();
+                },
+              );
             },
           );
         }
