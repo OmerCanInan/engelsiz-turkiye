@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/job_model.dart';
 import 'package:intl/intl.dart';
 
@@ -138,10 +139,27 @@ class JobDetailPage extends StatelessWidget {
           ],
         ),
         child: ElevatedButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Başvurunuz alındı! Şirket size dönüş yapacaktır.'), backgroundColor: Colors.green),
-            );
+          onPressed: () async {
+            final user = Supabase.instance.client.auth.currentUser;
+            if (user == null) return;
+
+            try {
+              await Supabase.instance.client.from('job_applications').insert({
+                'user_id': user.id,
+                'job_id': job.id,
+              });
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Başvurunuz başarıyla iletildi!'), backgroundColor: Colors.green),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Başvuru hatası: $e'), backgroundColor: Colors.red),
+                );
+              }
+            }
           },
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 56),
