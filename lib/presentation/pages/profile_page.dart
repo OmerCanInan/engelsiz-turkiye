@@ -13,10 +13,11 @@ class _ProfilePageState extends State<ProfilePage> {
   final _supabase = Supabase.instance.client;
   late final String? _userId;
 
-  // Çökme hatasını önlemek için nullable Future'lar
   Future<Map<String, dynamic>>? _profileFuture;
   Future<List<dynamic>>? _companyJobsFuture;
   Future<List<dynamic>>? _userApplicationsFuture;
+  Future<List<dynamic>>? _myDevicesFuture;
+  Future<List<dynamic>>? _myDeviceApplicationsFuture;
 
   @override
   void initState() {
@@ -40,6 +41,9 @@ class _ProfilePageState extends State<ProfilePage> {
     } else {
       _loadUserApplications();
     }
+    
+    _loadMyDevices();
+    _loadMyDeviceApplications();
 
     return data;
   }
@@ -59,6 +63,26 @@ class _ProfilePageState extends State<ProfilePage> {
       _userApplicationsFuture = _supabase
           .from('job_applications')
           .select('*, jobs(title, company_name)')
+          .eq('user_id', _userId!)
+          .order('created_at', ascending: false);
+    });
+  }
+
+  void _loadMyDevices() {
+    setState(() {
+      _myDevicesFuture = _supabase
+          .from('support_devices')
+          .select()
+          .eq('publisher_id', _userId!)
+          .order('created_at', ascending: false);
+    });
+  }
+
+  void _loadMyDeviceApplications() {
+    setState(() {
+      _myDeviceApplicationsFuture = _supabase
+          .from('device_applications')
+          .select('*, support_devices(name)')
           .eq('user_id', _userId!)
           .order('created_at', ascending: false);
     });
@@ -98,11 +122,21 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
                   _buildCompanyJobsList(),
                 ] else ...[
-                  const Text('Başvurularım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text('İş Başvurularım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   _buildUserApplicationsList(),
                 ],
                 
+                const SizedBox(height: 32),
+                const Text('Yayınladığım Cihazlar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _buildMyDevicesList(),
+                
+                const SizedBox(height: 32),
+                const Text('Cihaz Başvurularım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _buildMyDeviceApplicationsList(),
+
                 const SizedBox(height: 48),
                 _buildLogoutButton(),
               ],
@@ -180,6 +214,53 @@ class _ProfilePageState extends State<ProfilePage> {
                 leading: const Icon(Icons.check_circle, color: Colors.green),
                 title: Text(job['title'] ?? 'İlan silinmiş'),
                 subtitle: Text('${job['company_name']} - Durum: ${app['status']}'),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyDevicesList() {
+    if (_myDevicesFuture == null) return const Center(child: CircularProgressIndicator());
+    return FutureBuilder<List<dynamic>>(
+      future: _myDevicesFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) return const Text('Yayınladığınız cihaz bulunmuyor.');
+        return Column(
+          children: snapshot.data!.map((device) => Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: const Icon(Icons.devices_other, color: Colors.orange),
+              title: Text(device['name']),
+              onTap: () => _showDeviceApplicantsSheet(context, device),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _deleteDevice(context, device['id']),
+              ),
+            ),
+          )).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyDeviceApplicationsList() {
+    if (_myDeviceApplicationsFuture == null) return const Center(child: CircularProgressIndicator());
+    return FutureBuilder<List<dynamic>>(
+      future: _myDeviceApplicationsFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) return const Text('Cihaz başvurunuz bulunmuyor.');
+        return Column(
+          children: snapshot.data!.map((app) {
+            final device = app['support_devices'];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: const Icon(Icons.handyman, color: Colors.blue),
+                title: Text(device?['name'] ?? 'Cihaz silinmiş'),
+                subtitle: Text('Durum: ${app['status']}'),
               ),
             );
           }).toList(),
@@ -311,6 +392,92 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showDeviceApplicantsSheet(BuildContext context, Map<String, dynamic> device) {
+    final applicantsFuture = _supabase
+        .from('device_applications')
+        .select('*, profiles(full_name)')
+        .eq('device_id', device['id']);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, controller) => Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(device['name'], style: const TextStyle(fontSize: 18, color: Colors.grey)),
+              const Text('Cihaz Başvuruları', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: FutureBuilder<List<dynamic>>(
+                  future: applicantsFuture,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                    if (snap.hasError) return Center(child: Text('HATA:\n${snap.error}', style: const TextStyle(color: Colors.red)));
+                    if (!snap.hasData || snap.data!.isEmpty) return const Center(child: Text('Henüz başvuru yok.'));
+                    
+                    return ListView.builder(
+                      controller: controller,
+                      itemCount: snap.data!.length,
+                      itemBuilder: (_, i) {
+                        final app = snap.data![i];
+                        final name = app['profiles']?['full_name'] ?? 'Bilinmiyor';
+                        return Card(
+                          child: ListTile(
+                            leading: const CircleAvatar(child: Icon(Icons.person, color: Colors.orange)),
+                            title: Text(name),
+                            subtitle: Text('Durum: ${app['status']}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.visibility, color: Colors.blue),
+                                  tooltip: 'İncele',
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx2) => AlertDialog(
+                                        title: Text('$name - Cihaz Başvurusu'),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            _detailRow('Telefon:', app['contact_phone']),
+                                            const Divider(),
+                                            const Text('İhtiyaç Sebebi:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                            const SizedBox(height: 4),
+                                            Text(app['reason'] ?? 'Belirtilmemiş'),
+                                          ],
+                                        ),
+                                        actions: [TextButton(onPressed: () => Navigator.pop(ctx2), child: const Text('KAPAT'))],
+                                      ),
+                                    );
+                                  },
+                                ),
+                                IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () => _updateDeviceStatus(app['id'], 'accepted', app['user_id'], device['name'])),
+                                IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => _updateDeviceStatus(app['id'], 'rejected', app['user_id'], device['name'])),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _updateStatus(dynamic appId, String status, dynamic applicantUserId, String jobTitle) async {
     try {
       await _supabase.from('job_applications').update({'status': status}).eq('id', appId);
@@ -349,6 +516,46 @@ class _ProfilePageState extends State<ProfilePage> {
     if (confirm == true) {
       await _supabase.from('jobs').delete().eq('id', jobId);
       _loadCompanyJobs();
+    }
+  }
+
+  Future<void> _updateDeviceStatus(dynamic appId, String status, dynamic applicantUserId, String deviceName) async {
+    try {
+      await _supabase.from('device_applications').update({'status': status}).eq('id', appId);
+      
+      String durumMesaji = status == 'accepted' ? 'onaylandı' : 'reddedildi';
+      await _supabase.from('notifications').insert({
+        'user_id': applicantUserId,
+        'title': 'Cihaz Başvuru Sonucu',
+        'content': '"$deviceName" cihazı için yaptığınız başvuru $durumMesaji.',
+      });
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Durum güncellendi ve bildirim gönderildi.')));
+        _fetchProfile();
+      }
+    } catch (e) {
+      debugPrint('Hata: $e');
+    }
+  }
+
+  Future<void> _deleteDevice(BuildContext context, dynamic deviceId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cihaz İlanını Sil'),
+        content: const Text('Silmek istediğinize emin misiniz?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hayır')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Evet', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _supabase.from('support_devices').delete().eq('id', deviceId);
+      _loadMyDevices();
     }
   }
 
