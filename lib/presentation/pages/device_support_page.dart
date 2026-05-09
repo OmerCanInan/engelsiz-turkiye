@@ -160,6 +160,12 @@ class _DeviceSupportPageState extends State<DeviceSupportPage> {
             itemCount: devices.length,
             itemBuilder: (context, index) {
               final item = devices[index];
+              final deviceName = item['name']?.toString() ?? 'İsimsiz Cihaz';
+              final profile = item['profiles'];
+              final publisherName = (profile is Map && profile['full_name'] != null) 
+                  ? profile['full_name'].toString() 
+                  : 'İsimsiz Kurum';
+
               return Card(
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 16),
@@ -174,12 +180,12 @@ class _DeviceSupportPageState extends State<DeviceSupportPage> {
                     ),
                     child: const Icon(Icons.devices_other, color: Colors.orange, size: 32),
                   ),
-                  title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  title: Text(deviceName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      Text('Bağışçı / Kurum: ${item['profiles']?['full_name'] ?? 'İsimsiz'}', style: TextStyle(color: Colors.orange.shade800)),
+                      Text('Bağışçı / Kurum: $publisherName', style: TextStyle(color: Colors.orange.shade800)),
                     ],
                   ),
                   trailing: ElevatedButton(

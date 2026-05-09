@@ -118,8 +118,20 @@ class DeviceDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd.MM.yyyy').format(DateTime.parse(device['created_at']).toLocal());
-    final publisherName = device['profiles']?['full_name'] ?? 'İsimsiz Kurum';
+    String dateStr = 'Tarih Belirsiz';
+    if (device['created_at'] != null) {
+      try {
+        dateStr = DateFormat('dd.MM.yyyy').format(DateTime.parse(device['created_at'].toString()).toLocal());
+      } catch (_) {}
+    }
+    
+    final profile = device['profiles'];
+    final publisherName = (profile is Map && profile['full_name'] != null) 
+        ? profile['full_name'].toString() 
+        : 'İsimsiz Kurum';
+        
+    final deviceName = device['name']?.toString() ?? 'İsimsiz Cihaz';
+    final deviceDesc = device['description']?.toString() ?? 'Açıklama bulunmuyor.';
 
     return Scaffold(
       appBar: AppBar(
@@ -144,7 +156,7 @@ class DeviceDetailPage extends StatelessWidget {
             const SizedBox(height: 32),
             
             Text(
-              device['name'],
+              deviceName,
               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -177,7 +189,7 @@ class DeviceDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              device['description'],
+              deviceDesc,
               style: const TextStyle(fontSize: 16, height: 1.6),
             ),
             
