@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'video_player_page.dart';
 
 class EducationCategoryPage extends StatefulWidget {
   final String categoryName;
@@ -40,7 +43,7 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
     final formKey = GlobalKey<FormState>();
     String titleDesc = '';
     String publisherName = '';
-    String mediaUrl = '';
+    File? selectedFile;
     bool isSubmitting = false;
 
     showModalBottomSheet(
@@ -50,6 +53,19 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            Future<void> pickFile() async {
+              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['mp4', 'mp3', 'avi', 'mov', 'mkv'],
+              );
+
+              if (result != null && result.files.single.path != null) {
+                setModalState(() {
+                  selectedFile = File(result.files.single.path!);
+                });
+              }
+            }
+
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(ctx).viewInsets.bottom,
@@ -87,14 +103,29 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                       ),
                       const SizedBox(height: 16),
                       
-                      TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Video veya Ses Dosyası Linki',
-                          border: OutlineInputBorder(),
-                          hintText: 'Örn: https://youtube.com/...',
+                      InkWell(
+                        onTap: pickFile,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.video_file, color: selectedFile == null ? Colors.grey : Colors.blue),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  selectedFile == null 
+                                      ? 'Video veya Ses Dosyası Seç (mp4, mp3)' 
+                                      : selectedFile!.path.split('\\').last,
+                                  style: TextStyle(color: selectedFile == null ? Colors.grey : Colors.black),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        validator: (v) => v!.isEmpty ? 'Zorunlu alan' : null,
-                        onSaved: (v) => mediaUrl = v ?? '',
                       ),
                       const SizedBox(height: 24),
                       
@@ -103,20 +134,40 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                             ? null
                             : () async {
                                 if (formKey.currentState!.validate()) {
+                                  if (selectedFile == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lütfen bir medya dosyası seçin!'), backgroundColor: Colors.red));
+                                    return;
+                                  }
+
                                   formKey.currentState!.save();
                                   setModalState(() => isSubmitting = true);
                                   
                                   try {
+                                    final fileExt = selectedFile!.path.split('.').last;
+                                    final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+                                    
+                                    // Dosyayı Supabase'e yükle
+                                    await _supabase.storage
+                                        .from('education_media')
+                                        .upload(fileName, selectedFile!);
+                                        
+                                    // Public URL al
+                                    final publicUrl = _supabase.storage
+                                        .from('education_media')
+                                        .getPublicUrl(fileName);
+
+                                    // Veritabanına yaz
                                     await _supabase.from('education_materials').insert({
                                       'category': widget.categoryName,
                                       'target_audience': widget.targetAudience,
                                       'title': titleDesc,
                                       'publisher_name': publisherName,
-                                      'media_url': mediaUrl,
+                                      'media_url': publicUrl,
                                     });
+
                                     if (mounted) {
                                       Navigator.pop(ctx);
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eğitim başarıyla eklendi!'), backgroundColor: Colors.green));
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eğitim başarıyla yüklendi!'), backgroundColor: Colors.green));
                                       _loadEducations();
                                     }
                                   } catch (e) {
@@ -129,7 +180,9 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                                 }
                               },
                         style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                        child: isSubmitting ? const CircularProgressIndicator(color: Colors.white) : const Text('EĞİTİMİ KAYDET'),
+                        child: isSubmitting 
+                            ? const Row(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: Colors.white), SizedBox(width: 12), Text('Yükleniyor...')]) 
+                            : const Text('EĞİTİMİ KAYDET'),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -196,13 +249,18 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                     children: [
                       const SizedBox(height: 8),
                       Text('Yayıncı: ${item['publisher_name']}', style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(item['media_url'], style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                   onTap: () {
-                    // İleride mediaUrl'i bir webview veya url_launcher ile açabiliriz.
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link kopyalandı veya oynatıcı yakında eklenecek!')));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => VideoPlayerPage(
+                          videoUrl: item['media_url'],
+                          title: item['title'],
+                        ),
+                      ),
+                    );
                   },
                 ),
               );
