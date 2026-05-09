@@ -9,6 +9,7 @@ import 'presentation/pages/education_page.dart';
 import 'presentation/pages/daily_life_page.dart';
 import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/admin_panel_page.dart';
+import 'presentation/pages/talkback_main_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,11 +89,19 @@ class AuthGate extends StatelessWidget {
                 }
                 
                 // Normal kullanıcılar veya onaylı şirketler ana menüye geçer
+                bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context);
+                if (isTalkBackOn) {
+                  return const TalkbackMainPage();
+                }
                 return const MainNavigationPage();
               }
               
               // Veri yoksa (Eski kullanıcılar veya hata durumu)
               // Hackathon için kullanıcıyı engellemek yerine ana menüye alalım
+              bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context);
+              if (isTalkBackOn) {
+                return const TalkbackMainPage();
+              }
               return const MainNavigationPage();
             },
           );
