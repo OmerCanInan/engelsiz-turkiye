@@ -4,6 +4,7 @@ import 'rights_guide_page.dart';
 import 'issue_sharing_page.dart';
 import 'inbox_page.dart';
 import 'device_support_page.dart';
+import 'road_report_page.dart';
 
 class DailyLifePage extends StatelessWidget {
   const DailyLifePage({super.key});
@@ -80,6 +81,8 @@ class DailyLifePage extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const IssueSharingPage()));
                 } else if (item['title'] == 'Cihaz Destek Sistemi') {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const DeviceSupportPage()));
+                } else if (item['title'] == 'Yol Hata Bildirim Sistemi') {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const RoadReportPage()));
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('${item['title']} yakında eklenecek!')),

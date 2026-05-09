@@ -15,11 +15,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
 
   Future<List<dynamic>>? _companiesFuture;
   Future<List<dynamic>>? _educationsFuture;
+  Future<List<dynamic>>? _roadReportsFuture;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
   }
 
@@ -27,6 +28,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
     setState(() {
       _companiesFuture = _supabase.from('profiles').select().eq('role', 'company').eq('approval_status', 'pending');
       _educationsFuture = _supabase.from('education_materials').select().eq('status', 'pending');
+      _roadReportsFuture = _supabase.from('road_reports').select().eq('status', 'pending');
     });
   }
 
@@ -66,6 +68,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
           tabs: const [
             Tab(icon: Icon(Icons.business), text: 'Şirket İstekleri'),
             Tab(icon: Icon(Icons.school), text: 'Eğitim İstekleri'),
+            Tab(icon: Icon(Icons.report_problem), text: 'Yol Bildirimleri'),
           ],
         ),
       ),
@@ -74,6 +77,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
         children: [
           _buildCompanyApprovals(),
           _buildEducationApprovals(),
+          _buildRoadReports(),
         ],
       ),
     );
@@ -216,6 +220,94 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
       }
       _loadData();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Eğitim durumu: $status')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e')));
+    }
+  }
+  Widget _buildRoadReports() {
+    return FutureBuilder<List<dynamic>>(
+      future: _roadReportsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Hata: ${snapshot.error}\nVeritabanında road_reports tablosu bulunmayabilir.'));
+        }
+
+        final items = snapshot.data ?? [];
+        if (items.isEmpty) {
+          return const Center(child: Text('Bekleyen yol hata bildirimi bulunmuyor.'));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final report = items[index];
+            final dateStr = report['created_at'] != null 
+              ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(report['created_at']).toLocal())
+              : 'Tarih Yok';
+            
+            final lat = report['latitude'];
+            final lng = report['longitude'];
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListTile(
+                leading: const Icon(Icons.warning, color: Colors.orange, size: 40),
+                title: Text('Hata Bildirimi ($dateStr)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    Text('Detay: ${report['description']}'),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () {
+                        // Haritada açmak için url_launcher kullanılabilir
+                        // Ancak import url_launcher ekli olması lazım
+                        // Şimdilik sadece koordinatları gösterelim veya bir butona tıklanınca gösterelim
+                      },
+                      child: Text(
+                        'Konum: $lat, $lng',
+                        style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                      onPressed: () => _updateRoadReportStatus(report['id'], 'resolved'),
+                      tooltip: 'Çözüldü İşaretle',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.cancel, color: Colors.red, size: 32),
+                      onPressed: () => _updateRoadReportStatus(report['id'], 'rejected'),
+                      tooltip: 'İptal/Red',
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _updateRoadReportStatus(dynamic id, String status) async {
+    try {
+      final response = await _supabase.from('road_reports').update({'status': status}).eq('id', id).select();
+      if (response.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hata: RLS kısıtlaması nedeniyle güncellenemedi.')));
+        return;
+      }
+      _loadData();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bildirim durumu: $status')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e')));
     }
