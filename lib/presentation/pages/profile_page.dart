@@ -119,15 +119,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 
                 if (isCompany) ...[
                   _buildFolderTile('Yayınladığım İlanlar', Icons.work, _buildCompanyJobsList(), Colors.blue),
+                  const SizedBox(height: 16),
+                  _buildFolderTile('Yayınladığım Cihazlar', Icons.devices_other, _buildMyDevicesList(), Colors.orange),
                 ] else ...[
                   _buildFolderTile('İş Başvurularım', Icons.check_circle_outline, _buildUserApplicationsList(), Colors.green),
+                  const SizedBox(height: 16),
+                  _buildFolderTile('Cihaz Başvurularım', Icons.assignment, _buildMyDeviceApplicationsList(), Colors.purple),
                 ],
-                
-                const SizedBox(height: 16),
-                _buildFolderTile('Yayınladığım Cihazlar', Icons.devices_other, _buildMyDevicesList(), Colors.orange),
-                
-                const SizedBox(height: 16),
-                _buildFolderTile('Cihaz Başvurularım', Icons.assignment, _buildMyDeviceApplicationsList(), Colors.purple),
 
                 const SizedBox(height: 48),
                 _buildLogoutButton(),
