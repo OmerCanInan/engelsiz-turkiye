@@ -10,45 +10,66 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final user = Supabase.instance.client.auth.currentUser;
-  late Future<Map<String, dynamic>> _profileFuture;
-  late Future<List<dynamic>> _companyJobsFuture;
-  late Future<List<dynamic>> _userApplicationsFuture;
+  final _supabase = Supabase.instance.client;
+  late final String? _userId;
+
+  // Çökme hatasını önlemek için nullable Future'lar
+  Future<Map<String, dynamic>>? _profileFuture;
+  Future<List<dynamic>>? _companyJobsFuture;
+  Future<List<dynamic>>? _userApplicationsFuture;
 
   @override
   void initState() {
     super.initState();
-    _profileFuture = _fetchProfile();
+    _userId = _supabase.auth.currentUser?.id;
+    if (_userId != null) {
+      _profileFuture = _fetchProfile();
+    }
   }
 
   Future<Map<String, dynamic>> _fetchProfile() async {
-    if (user == null) throw Exception("Kullanıcı bulunamadı");
-    
-    final data = await Supabase.instance.client
+    final data = await _supabase
         .from('profiles')
         .select()
-        .eq('id', user!.id)
+        .eq('id', _userId!)
         .single();
-        
+
+    // Rolü öğrendikten sonra ilgili listeyi başlat
     if (data['role'] == 'company') {
-      _companyJobsFuture = Supabase.instance.client
+      _loadCompanyJobs();
+    } else {
+      _loadUserApplications();
+    }
+
+    return data;
+  }
+
+  void _loadCompanyJobs() {
+    setState(() {
+      _companyJobsFuture = _supabase
           .from('jobs')
           .select()
-          .eq('company_id', user!.id)
+          .eq('company_id', _userId!)
           .order('created_at', ascending: false);
-    } else {
-      _userApplicationsFuture = Supabase.instance.client
+    });
+  }
+
+  void _loadUserApplications() {
+    setState(() {
+      _userApplicationsFuture = _supabase
           .from('job_applications')
           .select('*, jobs(title, company_name)')
-          .eq('user_id', user!.id)
+          .eq('user_id', _userId!)
           .order('created_at', ascending: false);
-    }
-    
-    return data;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_userId == null) {
+      return const Scaffold(body: Center(child: Text('Giriş yapılmadı.')));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -58,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Profil yüklenemedi: ${snapshot.error}'));
+            return Center(child: Text('Hata: ${snapshot.error}'));
           }
           
           final profile = snapshot.data!;
@@ -69,112 +90,21 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Profil Kartı
-                Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: isCompany ? Colors.orange.shade100 : Colors.blue.shade100,
-                          child: Icon(isCompany ? Icons.business : Icons.person, size: 50, color: isCompany ? Colors.orange : Colors.blue),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(profile['full_name'] ?? 'İsimsiz', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text(user?.email ?? '', style: const TextStyle(color: Colors.grey)),
-                        const SizedBox(height: 8),
-                        Chip(
-                          label: Text(isCompany ? 'Şirket (İşveren)' : 'Kullanıcı', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          backgroundColor: isCompany ? Colors.orange : Colors.blue,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildProfileCard(profile, isCompany),
                 const SizedBox(height: 24),
                 
-                // Rol Bazlı İçerik
                 if (isCompany) ...[
                   const Text('Yayınladığım İlanlar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  FutureBuilder<List<dynamic>>(
-                    future: _companyJobsFuture,
-                    builder: (context, jobSnap) {
-                      if (jobSnap.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
-                      if (jobSnap.hasError || jobSnap.data == null || jobSnap.data!.isEmpty) {
-                        return const Text('Henüz ilan yayınlamadınız.', style: TextStyle(color: Colors.grey));
-                      }
-                      
-                      return Column(
-                        children: jobSnap.data!.map((job) => Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: const Icon(Icons.work, color: Colors.blue),
-                            title: Text(job['title']),
-                            subtitle: Text(job['location']),
-                            onTap: () {
-                              _showApplicantsSheet(context, job);
-                            },
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteJob(context, job['id']),
-                            ),
-                          ),
-                        )).toList(),
-                      );
-                    },
-                  ),
+                  _buildCompanyJobsList(),
                 ] else ...[
                   const Text('Başvurularım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  FutureBuilder<List<dynamic>>(
-                    future: _userApplicationsFuture,
-                    builder: (context, appSnap) {
-                      if (appSnap.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
-                      if (appSnap.hasError || appSnap.data == null || appSnap.data!.isEmpty) {
-                        return const Text('Henüz bir başvuru yapmadınız.', style: TextStyle(color: Colors.grey));
-                      }
-
-                      return Column(
-                        children: appSnap.data!.map((app) {
-                          final job = app['jobs'];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: ListTile(
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: Colors.green.shade50, shape: BoxShape.circle),
-                                child: const Icon(Icons.check_circle, color: Colors.green),
-                              ),
-                              title: Text(job['title'] ?? 'İlan bulunamadı'),
-                              subtitle: Text('${job['company_name']} - Durum: ${app['status']}'),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
+                  _buildUserApplicationsList(),
                 ],
                 
                 const SizedBox(height: 48),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.logout),
-                  label: const Text('ÇIKIŞ YAP'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade50,
-                    foregroundColor: Colors.red,
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  onPressed: () async {
-                    await AuthService().signOut();
-                    if (context.mounted) {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    }
-                  },
-                ),
+                _buildLogoutButton(),
               ],
             ),
           );
@@ -183,109 +113,183 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Şirketin ilanını silme metodu
-  Future<void> _deleteJob(BuildContext context, String jobId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('İlanı Sil'),
-        content: const Text('Bu iş ilanını tamamen silmek istediğinize emin misiniz?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İPTAL')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true), 
-            child: const Text('SİL', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+  Widget _buildProfileCard(Map<String, dynamic> profile, bool isCompany) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: isCompany ? Colors.orange.shade100 : Colors.blue.shade100,
+              child: Icon(isCompany ? Icons.business : Icons.person, size: 50, color: isCompany ? Colors.orange : Colors.blue),
+            ),
+            const SizedBox(height: 16),
+            Text(profile['full_name'] ?? 'İsimsiz', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(_supabase.auth.currentUser?.email ?? '', style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 8),
+            Chip(
+              label: Text(isCompany ? 'Şirket (İşveren)' : 'Kullanıcı', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              backgroundColor: isCompany ? Colors.orange : Colors.blue,
+            ),
+          ],
+        ),
       ),
     );
-
-    if (confirm == true) {
-      try {
-        await Supabase.instance.client.from('jobs').delete().eq('id', jobId);
-        
-        if (mounted) {
-          setState(() {
-            _companyJobsFuture = Supabase.instance.client
-                .from('jobs')
-                .select()
-                .eq('company_id', user!.id)
-                .order('created_at', ascending: false);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('İlan başarıyla silindi.'), backgroundColor: Colors.green));
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Silme Hatası: $e'), backgroundColor: Colors.red));
-        }
-      }
-    }
   }
 
-  // Başvuranları gösterme metodu
+  Widget _buildCompanyJobsList() {
+    if (_companyJobsFuture == null) return const Center(child: CircularProgressIndicator());
+    return FutureBuilder<List<dynamic>>(
+      future: _companyJobsFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) return const Text('Henüz ilanınız yok.');
+        return Column(
+          children: snapshot.data!.map((job) => Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: const Icon(Icons.work, color: Colors.blue),
+              title: Text(job['title']),
+              subtitle: Text(job['location']),
+              onTap: () => _showApplicantsSheet(context, job),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _deleteJob(context, job['id']),
+              ),
+            ),
+          )).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildUserApplicationsList() {
+    if (_userApplicationsFuture == null) return const Center(child: CircularProgressIndicator());
+    return FutureBuilder<List<dynamic>>(
+      future: _userApplicationsFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) return const Text('Henüz başvuru yok.');
+        return Column(
+          children: snapshot.data!.map((app) {
+            final job = app['jobs'];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: const Icon(Icons.check_circle, color: Colors.green),
+                title: Text(job['title'] ?? 'İlan silinmiş'),
+                subtitle: Text('${job['company_name']} - Durum: ${app['status']}'),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
   void _showApplicantsSheet(BuildContext context, Map<String, dynamic> job) {
-    final applicantsFuture = Supabase.instance.client
+    final applicantsFuture = _supabase
         .from('job_applications')
         .select('*, profiles(full_name)')
-        .eq('job_id', job['id'])
-        .order('created_at', ascending: false);
+        .eq('job_id', job['id']);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Padding(
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, controller) => Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('${job['title']}', style: const TextStyle(fontSize: 18, color: Colors.grey)),
+              Text(job['title'], style: const TextStyle(fontSize: 18, color: Colors.grey)),
               const Text('Gelen Başvurular', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              
-              FutureBuilder<List<dynamic>>(
-                future: applicantsFuture,
-                builder: (context, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-                  if (snap.hasError || snap.data == null || snap.data!.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Text('Bu ilana henüz başvuru yapılmamış.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+              Expanded(
+                child: FutureBuilder<List<dynamic>>(
+                  future: applicantsFuture,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                    if (!snap.hasData || snap.data!.isEmpty) return const Center(child: Text('Başvuru yok.'));
+                    
+                    return ListView.builder(
+                      controller: controller,
+                      itemCount: snap.data!.length,
+                      itemBuilder: (_, i) {
+                        final app = snap.data![i];
+                        final name = app['profiles']?['full_name'] ?? 'Bilinmiyor';
+                        return Card(
+                          child: ListTile(
+                            leading: const CircleAvatar(child: Icon(Icons.person)),
+                            title: Text(name),
+                            subtitle: Text('Durum: ${app['status']}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () => _updateStatus(app['id'], 'accepted')),
+                                IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => _updateStatus(app['id'], 'rejected')),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  }
-
-                  return Column(
-                    children: snap.data!.map((app) {
-                      final profile = app['profiles'];
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white)),
-                        title: Text(profile['full_name'] ?? 'İsimsiz', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Durum: ${app['status']}'),
-                        trailing: ElevatedButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Özgeçmiş görüntüleniyor...')));
-                          },
-                          style: ElevatedButton.styleFrom(visualDensity: VisualDensity.compact),
-                          child: const Text('İncele'),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
+                  },
+                ),
               ),
-              
-              const SizedBox(height: 24),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('KAPAT'),
-              )
             ],
           ),
-        );
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updateStatus(dynamic appId, String status) async {
+    try {
+      await _supabase.from('job_applications').update({'status': status}).eq('id', appId);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Durum güncellendi.')));
+        _fetchProfile(); // Veriyi yenile
       }
+    } catch (e) {
+      debugPrint('Hata: $e');
+    }
+  }
+
+  Future<void> _deleteJob(BuildContext context, dynamic jobId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('İlanı Sil'),
+        content: const Text('Silmek istediğinize emin misiniz?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hayır')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Evet', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _supabase.from('jobs').delete().eq('id', jobId);
+      _loadCompanyJobs();
+    }
+  }
+
+  Widget _buildLogoutButton() {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.logout),
+      label: const Text('ÇIKIŞ YAP'),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade50, foregroundColor: Colors.red, minimumSize: const Size(double.infinity, 50)),
+      onPressed: () async {
+        await AuthService().signOut();
+        if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      },
     );
   }
 }
