@@ -16,8 +16,6 @@ class AuthService {
     required String email,
     required String password,
     required String fullName,
-    required String disabilityType,
-    required int disabilityPercentage,
   }) async {
     final response = await _client.auth.signUp(
       email: email,
@@ -28,12 +26,12 @@ class AuthService {
     );
 
     if (response.user != null) {
-      // Profil tablosuna ekle
+      // Profil tablosuna ekle - ŞEMAYA TAM UYGUN
       await _client.from('profiles').insert({
         'id': response.user!.id,
         'full_name': fullName,
-        'disability_type': disabilityType,
-        'disability_percentage': disabilityPercentage,
+        'disability_type': 'Belirtilmedi',
+        'disability_percentage': 0,
       });
     }
 
