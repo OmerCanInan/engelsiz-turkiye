@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/course_model.dart';
 import '../../data/repositories/course_repository.dart';
+import 'profile_page.dart';
 
 class EducationPage extends StatefulWidget {
   const EducationPage({super.key});
@@ -22,7 +23,17 @@ class _EducationPageState extends State<EducationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Eğitimler')),
+      appBar: AppBar(
+        title: const Text('Eğitimler'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Course>>(
         future: _coursesFuture,
         builder: (context, snapshot) {

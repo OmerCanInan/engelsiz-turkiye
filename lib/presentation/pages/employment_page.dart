@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/job_model.dart';
 import '../../data/repositories/job_repository.dart';
 import 'job_detail_page.dart';
+import 'profile_page.dart';
 
 class EmploymentPage extends StatefulWidget {
   const EmploymentPage({super.key});
@@ -38,6 +39,14 @@ class _EmploymentPageState extends State<EmploymentPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Erişilebilir İstihdam'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(

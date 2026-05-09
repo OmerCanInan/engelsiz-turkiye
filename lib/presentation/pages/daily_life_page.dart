@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'profile_page.dart';
 
 class DailyLifePage extends StatelessWidget {
   const DailyLifePage({super.key});
@@ -42,6 +43,14 @@ class DailyLifePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Günlük Hayat'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+            },
+          ),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16.0),
