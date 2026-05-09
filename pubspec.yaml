@@ -1,0 +1,76 @@
+name: erisim_turkiye
+description: "Engelli bireylere yönelik kapsamlı destek uygulaması - Erişilebilir Türkiye"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  flutter_animate: ^4.5.0
+
+  # Supabase Backend
+  supabase_flutter: ^2.8.4
+
+  # Google Maps & Konum
+  google_maps_flutter: ^2.10.0
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # Local Storage
+  shared_preferences: ^2.3.5
+
+  # Dosya & Medya
+  image_picker: ^1.1.2
+  file_picker: ^8.1.7
+  permission_handler: ^11.4.0
+  path_provider: ^2.1.5
+
+  # Erişilebilirlik (Sesli)
+  flutter_tts: ^4.2.0
+  speech_to_text: ^7.0.0
+
+  # Network
+  http: ^1.2.2
+  connectivity_plus: ^6.1.4
+
+  # Utility
+  intl: ^0.20.2
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.4
+  flutter_local_notifications: ^18.0.1
+  uuid: ^4.5.1
+  equatable: ^2.0.7
+
+  # Charts
+  fl_chart: ^0.70.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/
+
