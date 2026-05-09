@@ -1,142 +1,110 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
-import '../../data/repositories/report_repository.dart';
 
-class DailyLifePage extends StatefulWidget {
+class DailyLifePage extends StatelessWidget {
   const DailyLifePage({super.key});
 
   @override
-  State<DailyLifePage> createState() => _DailyLifePageState();
-}
-
-class _DailyLifePageState extends State<DailyLifePage> {
-  GoogleMapController? _mapController;
-  final _repository = ReportRepository();
-  Set<Marker> _markers = {};
-  LatLng _initialPosition = const LatLng(39.9334, 32.8597); // Ankara varsayılan
-
-  @override
-  void initState() {
-    super.initState();
-    _getCurrentLocation();
-    _loadReports();
-  }
-
-  Future<void> _getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-
-    final position = await Geolocator.getCurrentPosition();
-    setState(() {
-      _initialPosition = LatLng(position.latitude, position.longitude);
-      _mapController?.animateCamera(CameraUpdate.newLatLng(_initialPosition));
-    });
-  }
-
-  Future<void> _loadReports() async {
-    try {
-      final reports = await _repository.getReports();
-      setState(() {
-        _markers = reports.map((r) => Marker(
-          markerId: MarkerId(r.id),
-          position: r.location,
-          infoWindow: InfoWindow(title: r.title, snippet: r.category),
-        )).toSet();
-      });
-    } catch (e) {
-      debugPrint('Hata: $e');
-    }
-  }
-
-  void _onLongPress(LatLng pos) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _ReportForm(location: pos, onSaved: _loadReports),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> menuItems = [
+      {
+        'title': 'Cihaz Destek Sistemi',
+        'icon': Icons.devices_other,
+        'color': Colors.blue,
+        'desc': 'Erişilebilirlik cihazları hakkında destek ve kılavuzlar.'
+      },
+      {
+        'title': 'Yol Hata Bildirim Sistemi',
+        'icon': Icons.report_problem_outlined,
+        'color': Colors.orange,
+        'desc': 'Bozuk yol, rampa eksikliği veya asansör arızalarını bildirin.'
+      },
+      {
+        'title': 'Hak Rehberi Sistemi',
+        'icon': Icons.gavel,
+        'color': Colors.purple,
+        'desc': 'Yasal haklarınız ve yasal danışmanlık rehberi.'
+      },
+      {
+        'title': 'SOS Gönüllü Sistemi',
+        'icon': Icons.sos,
+        'color': Colors.red,
+        'desc': 'Acil durumlarda yakındaki gönüllülerden yardım isteyin.'
+      },
+      {
+        'title': 'Sorun Paylaşım Sistemi',
+        'icon': Icons.forum_outlined,
+        'color': Colors.green,
+        'desc': 'Karşılaştığınız sorunları toplulukla paylaşın ve tartışın.'
+      },
+    ];
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Engelsiz Şehir Haritası')),
-      body: GoogleMap(
-        initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 14),
-        onMapCreated: (c) => _mapController = c,
-        markers: _markers,
-        onLongPress: _onLongPress,
-        myLocationEnabled: true,
-        myLocationButtonEnabled: true,
+      appBar: AppBar(
+        title: const Text('Günlük Hayat'),
+        centerTitle: true,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _getCurrentLocation(),
-        label: const Text('Sorun Bildir (Uzun Bas)'),
-        icon: const Icon(Icons.report_problem),
-      ),
-    );
-  }
-}
-
-class _ReportForm extends StatefulWidget {
-  final LatLng location;
-  final VoidCallback onSaved;
-
-  const _ReportForm({required this.location, required this.onSaved});
-
-  @override
-  State<_ReportForm> createState() => _ReportFormState();
-}
-
-class _ReportFormState extends State<_ReportForm> {
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  String _category = 'yol_bozuklugu';
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Sorun Bildirimi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          TextField(controller: _titleController, decoration: const InputDecoration(labelText: 'Başlık (Örn: Bozuk Rampa)')),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _category,
-            items: const [
-              DropdownMenuItem(value: 'yol_bozuklugu', child: Text('Yol Bozukluğu')),
-              DropdownMenuItem(value: 'rampa_eksikligi', child: Text('Rampa Eksikliği')),
-              DropdownMenuItem(value: 'asansor_arizasi', child: Text('Asansör Arızası')),
-            ],
-            onChanged: (v) => setState(() => _category = v!),
-          ),
-          const SizedBox(height: 12),
-          TextField(controller: _descController, decoration: const InputDecoration(labelText: 'Açıklama')),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () async {
-              await ReportRepository().createReport(
-                title: _titleController.text,
-                description: _descController.text,
-                category: _category,
-                location: widget.location,
-              );
-              Navigator.pop(context);
-              widget.onSaved();
-            },
-            child: const Text('KAYDET'),
-          ),
-          const SizedBox(height: 24),
-        ],
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        itemCount: menuItems.length,
+        itemBuilder: (context, index) {
+          final item = menuItems[index];
+          return Card(
+            elevation: 2,
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${item['title']} yakında eklenecek!')),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: item['color'].withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        item['icon'],
+                        color: item['color'],
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['title'],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item['desc'],
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
