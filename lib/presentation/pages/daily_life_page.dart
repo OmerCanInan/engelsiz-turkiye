@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'profile_page.dart';
+import 'rights_guide_page.dart';
 
 class DailyLifePage extends StatelessWidget {
   const DailyLifePage({super.key});
@@ -64,9 +65,13 @@ class DailyLifePage extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${item['title']} yakında eklenecek!')),
-                );
+                if (item['title'] == 'Hak Rehberi Sistemi') {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const RightsGuidePage()));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${item['title']} yakında eklenecek!')),
+                  );
+                }
               },
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
