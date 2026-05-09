@@ -175,10 +175,16 @@ class _ProfilePageState extends State<ProfilePage> {
     if (confirm == true) {
       try {
         await Supabase.instance.client.from('jobs').delete().eq('id', jobId);
-        setState(() {
-          _companyJobsFuture = _fetchProfile().then((_) => _companyJobsFuture);
-        });
+        
+        // Listeyi anında yenilemek için Future'ı tekrar oluşturuyoruz
         if (mounted) {
+          setState(() {
+            _companyJobsFuture = Supabase.instance.client
+                .from('jobs')
+                .select()
+                .eq('company_id', user!.id)
+                .order('created_at', ascending: false);
+          });
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('İlan başarıyla silindi.'), backgroundColor: Colors.green));
         }
       } catch (e) {
