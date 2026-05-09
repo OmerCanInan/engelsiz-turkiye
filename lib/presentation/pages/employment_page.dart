@@ -42,8 +42,15 @@ class _EmploymentPageState extends State<EmploymentPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+            onPressed: () async {
+              // Profil sayfasına git, dönene kadar bekle
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+              // Döndükten sonra (ilan silinmiş olabilir) ana listeyi yenile
+              if (mounted) {
+                setState(() {
+                  _jobsFuture = _repository.getJobs();
+                });
+              }
             },
           ),
         ],
