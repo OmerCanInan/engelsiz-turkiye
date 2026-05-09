@@ -204,6 +204,8 @@ class _CreateJobSheetState extends State<_CreateJobSheet> {
   final _descController = TextEditingController();
   final _locationController = TextEditingController();
   final _salaryController = TextEditingController();
+  final _featuresController = TextEditingController();
+  final _requirementsController = TextEditingController();
   
   bool _isLoading = false;
 
@@ -214,6 +216,8 @@ class _CreateJobSheetState extends State<_CreateJobSheet> {
     _descController.dispose();
     _locationController.dispose();
     _salaryController.dispose();
+    _featuresController.dispose();
+    _requirementsController.dispose();
     super.dispose();
   }
 
@@ -222,14 +226,27 @@ class _CreateJobSheetState extends State<_CreateJobSheet> {
     
     setState(() => _isLoading = true);
     try {
+      // Virgülle ayrılmış metni listeye çeviriyoruz
+      final featuresList = _featuresController.text
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+          
+      final reqList = _requirementsController.text
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
       await JobRepository().createJob(
         title: _titleController.text,
         companyName: _companyController.text,
         description: _descController.text,
         location: _locationController.text,
         salaryRange: _salaryController.text,
-        friendlyFeatures: ['Tekerlekli Sandalye Uygun', 'Esnek Çalışma'], // Varsayılan özellikler
-        requirements: ['En az lise mezunu'],
+        friendlyFeatures: featuresList,
+        requirements: reqList,
       );
       if (mounted) {
         Navigator.pop(context);
@@ -283,6 +300,18 @@ class _CreateJobSheetState extends State<_CreateJobSheet> {
                 controller: _salaryController,
                 decoration: const InputDecoration(labelText: 'Maaş Aralığı (Örn: 20.000₺ - 30.000₺)', prefixIcon: Icon(Icons.attach_money)),
                 validator: (v) => v!.isEmpty ? 'Maaş aralığı zorunlu' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _featuresController,
+                decoration: const InputDecoration(labelText: 'Erişilebilirlik İmkanları (Virgülle ayırın)', hintText: 'Örn: Rampa, Esnek Saatler', prefixIcon: Icon(Icons.accessible)),
+                validator: (v) => v!.isEmpty ? 'En az 1 imkan ekleyin' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _requirementsController,
+                decoration: const InputDecoration(labelText: 'İş Gereksinimleri (Virgülle ayırın)', hintText: 'Örn: Lise Mezunu, B Sınıfı Ehliyet', prefixIcon: Icon(Icons.checklist)),
+                validator: (v) => v!.isEmpty ? 'En az 1 gereksinim ekleyin' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
