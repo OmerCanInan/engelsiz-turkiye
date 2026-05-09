@@ -31,7 +31,7 @@ class TalkbackMainPage extends StatelessWidget {
             hint: 'Yakındaki gönüllülere SOS acil durum sinyali göndermek için çift dokunun.',
             color: Colors.red.shade900,
             icon: Icons.warning,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SosSystemPage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosMainPage())),
           ),
           _buildTalkbackButton(
             context,
