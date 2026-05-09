@@ -150,6 +150,32 @@ class _EmploymentPageState extends State<EmploymentPage> {
               itemCount: jobs.length,
               itemBuilder: (context, index) {
                 final job = jobs[index];
+                final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+                if (isTalkBack) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Semantics(
+                      button: true,
+                      label: '${job.title}, ${job.companyName}. Şehir: ${job.location}. İlan detaylarını okumak için çift dokunun.',
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 120),
+                          backgroundColor: Colors.blue.shade900,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => JobDetailPage(job: job))).then((_) {
+                            if (mounted) setState(() { _jobsFuture = _repository.getJobs(); });
+                          });
+                        },
+                        child: Text('${job.title}\n${job.companyName}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 24)),
+                      ),
+                    ),
+                  );
+                }
+
                 return Card(
                   elevation: 0,
                   margin: const EdgeInsets.only(bottom: 16),
@@ -166,10 +192,7 @@ class _EmploymentPageState extends State<EmploymentPage> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                              decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(12)),
                               child: const Icon(Icons.business, color: Colors.blue),
                             ),
                             const SizedBox(width: 12),
@@ -207,20 +230,11 @@ class _EmploymentPageState extends State<EmploymentPage> {
                         const SizedBox(height: 12),
                         ElevatedButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => JobDetailPage(job: job)),
-                            ).then((_) {
-                              if (mounted) {
-                                setState(() {
-                                  _jobsFuture = _repository.getJobs();
-                                });
-                              }
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => JobDetailPage(job: job))).then((_) {
+                              if (mounted) setState(() { _jobsFuture = _repository.getJobs(); });
                             });
                           },
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 44),
-                          ),
+                          style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 44)),
                           child: const Text('İLAN DETAYI'),
                         ),
                       ],

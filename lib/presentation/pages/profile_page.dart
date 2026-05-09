@@ -169,6 +169,32 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildFolderTile(String title, IconData icon, Widget childList, Color color) {
+    final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+    if (isTalkBack) {
+      return Card(
+        color: Colors.blue.shade900,
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 40, color: Colors.white),
+                  const SizedBox(width: 16),
+                  Expanded(child: Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white))),
+                ],
+              ),
+              const SizedBox(height: 24),
+              childList,
+            ],
+          ),
+        ),
+      );
+    }
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

@@ -58,6 +58,35 @@ class RightsGuidePage extends StatelessWidget {
         itemCount: rightsList.length,
         itemBuilder: (context, index) {
           final right = rightsList[index];
+          final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+          if (isTalkBack) {
+            return Semantics(
+              label: '${right['title']}. ${right['desc']}',
+              child: Card(
+                color: Colors.blue.shade900,
+                margin: const EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(right['icon'], size: 40, color: Colors.white),
+                          const SizedBox(width: 16),
+                          Expanded(child: Text(right['title'], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white))),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(right['desc'], style: const TextStyle(fontSize: 20, color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
           return Card(
             elevation: 2,
             margin: const EdgeInsets.only(bottom: 16),
@@ -82,7 +111,7 @@ class RightsGuidePage extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: Text(
                       right['desc'],
-                      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                      style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87, height: 1.5),
                     ),
                   ),
                 ],

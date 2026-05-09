@@ -128,6 +128,40 @@ class EducationPage extends StatelessWidget {
   }
 
   Widget _buildCategoryGrid(BuildContext context, {required String targetAudience, required List<Map<String, dynamic>> categories}) {
+    final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+    if (isTalkBack) {
+      return Column(
+        children: categories.map((category) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Semantics(
+              button: true,
+              label: '${category['title']} kategorisi. Girmek için çift dokunun.',
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 100),
+                  backgroundColor: category['color'],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => EducationCategoryPage(categoryName: category['title'], targetAudience: targetAudience)));
+                },
+                child: Row(
+                  children: [
+                    Icon(category['icon'], size: 40),
+                    const SizedBox(width: 16),
+                    Expanded(child: Text(category['title'], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
