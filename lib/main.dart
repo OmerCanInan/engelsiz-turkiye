@@ -47,17 +47,70 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        // Bağlantı hatası veya bekleyen durum kontrolü
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         
         final session = snapshot.data?.session;
         if (session != null) {
-          return const MainNavigationPage();
+          // Kullanıcı giriş yaptı ama Şirket/Kullanıcı onay durumu nedir?
+          return FutureBuilder(
+            future: Supabase.instance.client.from('profiles').select('approval_status').eq('id', session.user.id).maybeSingle(),
+            builder: (context, AsyncSnapshot<Map<String, dynamic>?> profileSnapshot) {
+              if (profileSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              }
+              
+              if (profileSnapshot.hasData) {
+                final status = profileSnapshot.data!['approval_status'];
+                if (status == 'pending') {
+                  return const PendingApprovalPage();
+                }
+              }
+              
+              return const MainNavigationPage();
+            },
+          );
         }
         return const LoginPage();
       },
+    );
+  }
+}
+
+class PendingApprovalPage extends StatelessWidget {
+  const PendingApprovalPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.hourglass_empty, size: 80, color: Colors.orange),
+              const SizedBox(height: 24),
+              const Text('Onay Bekleniyor', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              const Text(
+                'Şirket hesabınız başarıyla oluşturuldu ancak henüz yönetici tarafından onaylanmadı. Onaylandığında bu ekrandan geçiş yapabileceksiniz.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+              const SizedBox(height: 48),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.logout),
+                label: const Text('Farklı Bir Hesapla Gir'),
+                onPressed: () async {
+                  await Supabase.instance.client.auth.signOut();
+                },
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
