@@ -13,6 +13,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final user = Supabase.instance.client.auth.currentUser;
   late Future<Map<String, dynamic>> _profileFuture;
   late Future<List<dynamic>> _companyJobsFuture;
+  late Future<List<dynamic>> _userApplicationsFuture;
 
   @override
   void initState() {
@@ -34,6 +35,12 @@ class _ProfilePageState extends State<ProfilePage> {
           .from('jobs')
           .select()
           .eq('company_id', user!.id)
+          .order('created_at', ascending: false);
+    } else {
+      _userApplicationsFuture = Supabase.instance.client
+          .from('job_applications')
+          .select('*, jobs(title, company_name)')
+          .eq('user_id', user!.id)
           .order('created_at', ascending: false);
     }
     
@@ -123,16 +130,32 @@ class _ProfilePageState extends State<ProfilePage> {
                 ] else ...[
                   const Text('Başvurularım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  Card(
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: Colors.green.shade50, shape: BoxShape.circle),
-                        child: const Icon(Icons.check_circle, color: Colors.green),
-                      ),
-                      title: const Text('Yazılım Uzmanı - Tech A.Ş.'),
-                      subtitle: const Text('Durum: İnceleniyor'),
-                    ),
+                  FutureBuilder<List<dynamic>>(
+                    future: _userApplicationsFuture,
+                    builder: (context, appSnap) {
+                      if (appSnap.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
+                      if (appSnap.hasError || appSnap.data == null || appSnap.data!.isEmpty) {
+                        return const Text('Henüz bir başvuru yapmadınız.', style: TextStyle(color: Colors.grey));
+                      }
+
+                      return Column(
+                        children: appSnap.data!.map((app) {
+                          final job = app['jobs'];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(color: Colors.green.shade50, shape: BoxShape.circle),
+                                child: const Icon(Icons.check_circle, color: Colors.green),
+                              ),
+                              title: Text(job['title'] ?? 'İlan bulunamadı'),
+                              subtitle: Text('${job['company_name']} - Durum: ${app['status']}'),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
                   ),
                 ],
                 
@@ -148,7 +171,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   onPressed: () async {
                     await AuthService().signOut();
                     if (context.mounted) {
-                      // Çıkış yapınca üstteki sayfaları kapatıp ana sayfaya (LoginPage'e) dön
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     }
                   },
@@ -182,7 +204,6 @@ class _ProfilePageState extends State<ProfilePage> {
       try {
         await Supabase.instance.client.from('jobs').delete().eq('id', jobId);
         
-        // Listeyi anında yenilemek için Future'ı tekrar oluşturuyoruz
         if (mounted) {
           setState(() {
             _companyJobsFuture = Supabase.instance.client
@@ -201,8 +222,14 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // Başvuranları gösterme metodu (Hackathon için tasarımsal simülasyon)
+  // Başvuranları gösterme metodu
   void _showApplicantsSheet(BuildContext context, Map<String, dynamic> job) {
+    final applicantsFuture = Supabase.instance.client
+        .from('job_applications')
+        .select('*, profiles(full_name)')
+        .eq('job_id', job['id'])
+        .order('created_at', ascending: false);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -218,37 +245,36 @@ class _ProfilePageState extends State<ProfilePage> {
               const Text('Gelen Başvurular', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               
-              // Örnek Başvuran 1
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white)),
-                title: const Text('Ahmet Yılmaz', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Ortopedik Engelli - %40\nLise Mezunu • 3 Yıl Tecrübe'),
-                isThreeLine: true,
-                trailing: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Özgeçmiş indiriliyor...')));
-                  },
-                  style: ElevatedButton.styleFrom(visualDensity: VisualDensity.compact),
-                  child: const Text('CV İncele'),
-                ),
-              ),
-              const Divider(),
-              
-              // Örnek Başvuran 2
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(backgroundColor: Colors.purple, child: Icon(Icons.person, color: Colors.white)),
-                title: const Text('Zeynep Demir', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('İşitme Engelli - %50\nÜniversite Mezunu • 1 Yıl Tecrübe'),
-                isThreeLine: true,
-                trailing: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Özgeçmiş indiriliyor...')));
-                  },
-                  style: ElevatedButton.styleFrom(visualDensity: VisualDensity.compact),
-                  child: const Text('CV İncele'),
-                ),
+              FutureBuilder<List<dynamic>>(
+                future: applicantsFuture,
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                  if (snap.hasError || snap.data == null || snap.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text('Bu ilana henüz başvuru yapılmamış.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                    );
+                  }
+
+                  return Column(
+                    children: snap.data!.map((app) {
+                      final profile = app['profiles'];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white)),
+                        title: Text(profile['full_name'] ?? 'İsimsiz', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('Durum: ${app['status']}'),
+                        trailing: ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Özgeçmiş görüntüleniyor...')));
+                          },
+                          style: ElevatedButton.styleFrom(visualDensity: VisualDensity.compact),
+                          child: const Text('İncele'),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
               
               const SizedBox(height: 24),
