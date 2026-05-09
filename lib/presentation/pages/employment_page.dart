@@ -74,118 +74,143 @@ class _EmploymentPageState extends State<EmploymentPage> {
           ),
         ),
       ),
-      body: FutureBuilder<List<Job>>(
-        future: _jobsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 60),
-                    const SizedBox(height: 16),
-                    const Text('PostgreSQL Veritabanı Hatası', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    const SizedBox(height: 8),
-                    Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => setState(() { _jobsFuture = _repository.getJobs(); }),
-                      child: const Text('TEKRAR DENE'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          final jobs = snapshot.data ?? [];
-          if (jobs.isEmpty) {
-            return const Center(child: Text('Henüz iş ilanı bulunmuyor.'));
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: jobs.length,
-            itemBuilder: (context, index) {
-              final job = jobs[index];
-              return Card(
-                elevation: 0,
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey[300]!),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[50],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.business, color: Colors.blue),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(job.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                Text(job.companyName, style: TextStyle(color: Colors.grey[600])),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        children: job.friendlyFeatures.map((feat) {
-                          return Chip(
-                            label: Text(feat, style: const TextStyle(fontSize: 12)),
-                            backgroundColor: Colors.green[50],
-                            side: BorderSide.none,
-                            avatar: const Icon(Icons.check_circle, size: 16, color: Colors.green),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(job.location, style: const TextStyle(fontWeight: FontWeight.w500)),
-                          Text(job.salaryRange, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => JobDetailPage(job: job)),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 44),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          setState(() {
+            _jobsFuture = _repository.getJobs();
+          });
+          await _jobsFuture;
+        },
+        child: FutureBuilder<List<Job>>(
+          future: _jobsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                        const SizedBox(height: 16),
+                        const Text('PostgreSQL Veritabanı Hatası', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        const SizedBox(height: 8),
+                        Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => setState(() { _jobsFuture = _repository.getJobs(); }),
+                          child: const Text('TEKRAR DENE'),
                         ),
-                        child: const Text('İLAN DETAYI'),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
-            },
-          );
-        },
+            }
+            final jobs = snapshot.data ?? [];
+            if (jobs.isEmpty) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Container(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  alignment: Alignment.center,
+                  child: const Text('Henüz iş ilanı bulunmuyor.'),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: jobs.length,
+              itemBuilder: (context, index) {
+                final job = jobs[index];
+                return Card(
+                  elevation: 0,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.business, color: Colors.blue),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(job.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                  Text(job.companyName, style: TextStyle(color: Colors.grey[600])),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          children: job.friendlyFeatures.map((feat) {
+                            return Chip(
+                              label: Text(feat, style: const TextStyle(fontSize: 12)),
+                              backgroundColor: Colors.green[50],
+                              side: BorderSide.none,
+                              avatar: const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(job.location, style: const TextStyle(fontWeight: FontWeight.w500)),
+                            Text(job.salaryRange, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => JobDetailPage(job: job)),
+                            ).then((_) {
+                              if (mounted) {
+                                setState(() {
+                                  _jobsFuture = _repository.getJobs();
+                                });
+                              }
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 44),
+                          ),
+                          child: const Text('İLAN DETAYI'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
