@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminPanelPage extends StatefulWidget {
   const AdminPanelPage({super.key});
@@ -264,30 +265,18 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
                     Text('Detay: ${report['description']}'),
                     const SizedBox(height: 8),
                     InkWell(
-                      onTap: () {
-                        // Haritada açmak için url_launcher kullanılabilir
-                        // Ancak import url_launcher ekli olması lazım
-                        // Şimdilik sadece koordinatları gösterelim veya bir butona tıklanınca gösterelim
+                      onTap: () async {
+                        final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        } else {
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Harita açılamadı.')));
+                        }
                       },
                       child: Text(
-                        'Konum: $lat, $lng',
+                        'Konumu Haritada Gör ($lat, $lng)',
                         style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                       ),
-                    ),
-                  ],
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.check_circle, color: Colors.green, size: 32),
-                      onPressed: () => _updateRoadReportStatus(report['id'], 'resolved'),
-                      tooltip: 'Çözüldü İşaretle',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.cancel, color: Colors.red, size: 32),
-                      onPressed: () => _updateRoadReportStatus(report['id'], 'rejected'),
-                      tooltip: 'İptal/Red',
                     ),
                   ],
                 ),
