@@ -22,6 +22,8 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
   final _supabase = Supabase.instance.client;
   Future<List<dynamic>>? _educationsFuture;
 
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -204,70 +206,103 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
         title: Text(widget.categoryName),
         centerTitle: true,
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: _educationsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Hata oluştu:\n${snapshot.error}', textAlign: TextAlign.center));
-          }
-
-          final educations = snapshot.data ?? [];
-          if (educations.isEmpty) {
-            return const Center(
-              child: Text(
-                'Bu kategoride henüz eğitim yok.\nSağ alt köşeden yeni bir eğitim ekleyebilirsiniz.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Eğitim ara...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
               ),
-            );
-          }
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val.toLowerCase();
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<dynamic>>(
+              future: _educationsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Hata oluştu:\n${snapshot.error}', textAlign: TextAlign.center));
+                }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: educations.length,
-            itemBuilder: (context, index) {
-              final item = educations[index];
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      shape: BoxShape.circle,
+                var educations = snapshot.data ?? [];
+                
+                // Arama Filtresi
+                if (_searchQuery.isNotEmpty) {
+                  educations = educations.where((e) {
+                    final title = (e['title'] ?? '').toString().toLowerCase();
+                    return title.contains(_searchQuery);
+                  }).toList();
+                }
+
+                if (educations.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'Aradığınız kriterlere uygun veya\nhenüz onaylanmış bir eğitim yok.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
                     ),
-                    child: const Icon(Icons.play_arrow, color: Colors.blue, size: 32),
-                  ),
-                  title: Text(item['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      Text('Yayıncı: ${item['publisher_name']}', style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => VideoPlayerPage(
-                          videoUrl: item['media_url'],
-                          title: item['title'],
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: educations.length,
+                  itemBuilder: (context, index) {
+                    final item = educations[index];
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(16),
+                        leading: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.play_arrow, color: Colors.blue, size: 32),
                         ),
+                        title: Text(item['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            Text('Yayıncı: ${item['publisher_name']}', style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => VideoPlayerPage(
+                                videoUrl: item['media_url'],
+                                title: item['title'],
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
-                ),
-              );
-            },
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddEducationSheet,
