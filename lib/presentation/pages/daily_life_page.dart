@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'profile_page.dart';
 import 'rights_guide_page.dart';
 import 'issue_sharing_page.dart';
+import 'inbox_page.dart';
 
 class DailyLifePage extends StatelessWidget {
   const DailyLifePage({super.key});
@@ -45,6 +46,12 @@ class DailyLifePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Günlük Hayat'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const InboxPage()));
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),

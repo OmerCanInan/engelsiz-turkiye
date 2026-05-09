@@ -3,6 +3,7 @@ import '../../data/models/job_model.dart';
 import '../../data/repositories/job_repository.dart';
 import 'job_detail_page.dart';
 import 'profile_page.dart';
+import 'inbox_page.dart';
 
 class EmploymentPage extends StatefulWidget {
   const EmploymentPage({super.key});
@@ -39,6 +40,12 @@ class _EmploymentPageState extends State<EmploymentPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Erişilebilir İstihdam'),
+        leading: IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const InboxPage()));
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),

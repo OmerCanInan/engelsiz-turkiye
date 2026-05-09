@@ -247,8 +247,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   tooltip: 'İncele',
                                   onPressed: () => _showApplicantDetails(context, name, app),
                                 ),
-                                IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () => _updateStatus(app['id'], 'accepted')),
-                                IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => _updateStatus(app['id'], 'rejected')),
+                                IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () => _updateStatus(app['id'], 'accepted', app['user_id'], job['title'])),
+                                IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => _updateStatus(app['id'], 'rejected', app['user_id'], job['title'])),
                               ],
                             ),
                           ),
@@ -277,6 +277,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               _detailRow('Yaş:', app['age']),
               _detailRow('E-posta:', app['contact_email']),
+              _detailRow('Telefon:', app['contact_phone']),
               _detailRow('Beklenen Maaş:', app['expected_salary']),
               const Divider(),
               const Text('Deneyimler:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -310,12 +311,21 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _updateStatus(dynamic appId, String status) async {
+  Future<void> _updateStatus(dynamic appId, String status, dynamic applicantUserId, String jobTitle) async {
     try {
       await _supabase.from('job_applications').update({'status': status}).eq('id', appId);
+      
+      // Bildirim Gönderimi
+      String durumMesaji = status == 'accepted' ? 'kabul edildi' : 'reddedildi';
+      await _supabase.from('notifications').insert({
+        'user_id': applicantUserId,
+        'title': 'Başvuru Sonucu',
+        'content': '"$jobTitle" başlıklı ilan için yaptığınız başvuru $durumMesaji.',
+      });
+
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Durum güncellendi.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Durum güncellendi ve kullanıcıya bildirim gönderildi.')));
         _fetchProfile(); // Veriyi yenile
       }
     } catch (e) {

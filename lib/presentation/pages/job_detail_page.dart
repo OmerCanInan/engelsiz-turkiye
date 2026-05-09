@@ -159,6 +159,7 @@ class JobDetailPage extends StatelessWidget {
     String experiences = '';
     String coverLetter = '';
     String contactEmail = '';
+    String contactPhone = '';
 
     showModalBottomSheet(
       context: context,
@@ -194,6 +195,14 @@ class JobDetailPage extends StatelessWidget {
                     onSaved: (v) => contactEmail = v ?? '',
                   ),
                   const SizedBox(height: 12),
+
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Telefon Numaranız', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.phone,
+                    validator: (v) => v!.isEmpty ? 'Zorunlu alan' : null,
+                    onSaved: (v) => contactPhone = v ?? '',
+                  ),
+                  const SizedBox(height: 12),
                   
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Maaş Beklentiniz (Aylık)', border: OutlineInputBorder()),
@@ -220,7 +229,7 @@ class JobDetailPage extends StatelessWidget {
                       if (formKey.currentState!.validate()) {
                         formKey.currentState!.save();
                         Navigator.pop(ctx);
-                        await _submitApplication(context, age, contactEmail, expectedSalary, experiences, coverLetter);
+                        await _submitApplication(context, age, contactEmail, contactPhone, expectedSalary, experiences, coverLetter);
                       }
                     },
                     style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
@@ -236,7 +245,7 @@ class JobDetailPage extends StatelessWidget {
     );
   }
 
-  Future<void> _submitApplication(BuildContext context, String age, String email, String salary, String exp, String cover) async {
+  Future<void> _submitApplication(BuildContext context, String age, String email, String phone, String salary, String exp, String cover) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
@@ -246,6 +255,7 @@ class JobDetailPage extends StatelessWidget {
         'job_id': job.id,
         'age': age,
         'contact_email': email,
+        'contact_phone': phone,
         'expected_salary': salary,
         'experiences': exp,
         'cover_letter': cover,
