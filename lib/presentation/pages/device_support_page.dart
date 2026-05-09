@@ -188,18 +188,15 @@ class _DeviceSupportPageState extends State<DeviceSupportPage> {
                       Text('Bağışçı / Kurum: $publisherName', style: TextStyle(color: Colors.orange.shade800)),
                     ],
                   ),
-                  trailing: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DeviceDetailPage(device: item),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                    child: const Text('İncele'),
-                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DeviceDetailPage(device: item),
+                      ),
+                    );
+                  },
                 ),
               );
             },
