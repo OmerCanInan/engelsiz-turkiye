@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../data/models/course_model.dart';
-import '../../data/repositories/course_repository.dart';
 import 'profile_page.dart';
+import 'education_category_page.dart';
+import 'inbox_page.dart';
 
 class EducationPage extends StatefulWidget {
   const EducationPage({super.key});
@@ -10,14 +10,32 @@ class EducationPage extends StatefulWidget {
   State<EducationPage> createState() => _EducationPageState();
 }
 
-class _EducationPageState extends State<EducationPage> {
-  final _repository = CourseRepository();
-  late Future<List<Course>> _coursesFuture;
+class _EducationPageState extends State<EducationPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  final List<String> gormeEngellilerKategorileri = [
+    'Şirketlerin Yayınladığı Eğitimler',
+    'Genel Eğitimler',
+  ];
+
+  final List<String> gormeEngelliOlmayanlarKategorileri = [
+    'İşaret Dili Eğitimi',
+    'Şirketler İçin Eğitimler',
+    'Genel Eğitimler',
+    'Öğrenme Engeli Olanlara Özel Eğitimler',
+    'Duyma Engeli Olanlar İçin Özel Eğitimler',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _coursesFuture = _repository.getCourses();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -25,6 +43,13 @@ class _EducationPageState extends State<EducationPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Eğitimler'),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const InboxPage()));
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -33,61 +58,64 @@ class _EducationPageState extends State<EducationPage> {
             },
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          labelColor: Colors.blue.shade700,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.blue.shade700,
+          tabs: const [
+            Tab(text: 'Görme Engelliler İçin'),
+            Tab(text: 'Görme Engelli Olmayanlar İçin'),
+          ],
+        ),
       ),
-      body: FutureBuilder<List<Course>>(
-        future: _coursesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // 1. Tab: Görme Engelliler
+          _buildCategoryList(gormeEngellilerKategorileri, 'Görme Engelliler'),
           
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.wifi_off, color: Colors.red, size: 60),
-                    const SizedBox(height: 16),
-                    const Text('Bağlantı veya Veri Hatası', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    const SizedBox(height: 8),
-                    Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () => setState(() { _coursesFuture = _repository.getCourses(); }),
-                      child: const Text('TEKRAR DENE'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+          // 2. Tab: Görme Engelli Olmayanlar
+          _buildCategoryList(gormeEngelliOlmayanlarKategorileri, 'Diğer Bireyler'),
+        ],
+      ),
+    );
+  }
 
-          final courses = snapshot.data ?? [];
-          if (courses.isEmpty) {
-            return const Center(child: Text('Henüz eğitim bulunmuyor.'));
-          }
-
-          return ListView.builder(
-            itemCount: courses.length,
-            padding: const EdgeInsets.all(16),
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: ListTile(
-                  leading: const Icon(Icons.play_circle_fill, color: Colors.green, size: 40),
-                  title: Text(course.title),
-                  subtitle: Text(course.instructor),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {},
+  Widget _buildCategoryList(List<String> categories, String targetAudience) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            leading: const CircleAvatar(
+              backgroundColor: Colors.blue,
+              child: Icon(Icons.folder, color: Colors.white),
+            ),
+            title: Text(category, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            onTap: () {
+              // Alt klasöre git (ilgili eğitim listesini görecek)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EducationCategoryPage(
+                    categoryName: category,
+                    targetAudience: targetAudience,
+                  ),
                 ),
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

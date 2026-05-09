@@ -1,0 +1,221 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class EducationCategoryPage extends StatefulWidget {
+  final String categoryName;
+  final String targetAudience;
+
+  const EducationCategoryPage({
+    super.key,
+    required this.categoryName,
+    required this.targetAudience,
+  });
+
+  @override
+  State<EducationCategoryPage> createState() => _EducationCategoryPageState();
+}
+
+class _EducationCategoryPageState extends State<EducationCategoryPage> {
+  final _supabase = Supabase.instance.client;
+  Future<List<dynamic>>? _educationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEducations();
+  }
+
+  void _loadEducations() {
+    setState(() {
+      _educationsFuture = _supabase
+          .from('education_materials')
+          .select()
+          .eq('category', widget.categoryName)
+          .eq('target_audience', widget.targetAudience)
+          .order('created_at', ascending: false);
+    });
+  }
+
+  void _showAddEducationSheet() {
+    final formKey = GlobalKey<FormState>();
+    String titleDesc = '';
+    String publisherName = '';
+    String mediaUrl = '';
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 24, right: 24, top: 24,
+              ),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text('Yeni Eğitim Ekle', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text('${widget.targetAudience} - ${widget.categoryName}', style: const TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 24),
+                      
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Eğitim Açıklaması / Başlığı',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Zorunlu alan' : null,
+                        onSaved: (v) => titleDesc = v ?? '',
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Yayıncı / Eğitmen İsmi',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Zorunlu alan' : null,
+                        onSaved: (v) => publisherName = v ?? '',
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Video veya Ses Dosyası Linki',
+                          border: OutlineInputBorder(),
+                          hintText: 'Örn: https://youtube.com/...',
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Zorunlu alan' : null,
+                        onSaved: (v) => mediaUrl = v ?? '',
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                if (formKey.currentState!.validate()) {
+                                  formKey.currentState!.save();
+                                  setModalState(() => isSubmitting = true);
+                                  
+                                  try {
+                                    await _supabase.from('education_materials').insert({
+                                      'category': widget.categoryName,
+                                      'target_audience': widget.targetAudience,
+                                      'title': titleDesc,
+                                      'publisher_name': publisherName,
+                                      'media_url': mediaUrl,
+                                    });
+                                    if (mounted) {
+                                      Navigator.pop(ctx);
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eğitim başarıyla eklendi!'), backgroundColor: Colors.green));
+                                      _loadEducations();
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red));
+                                    }
+                                  } finally {
+                                    if (mounted) setModalState(() => isSubmitting = false);
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+                        child: isSubmitting ? const CircularProgressIndicator(color: Colors.white) : const Text('EĞİTİMİ KAYDET'),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.categoryName),
+        centerTitle: true,
+      ),
+      body: FutureBuilder<List<dynamic>>(
+        future: _educationsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Hata oluştu:\n${snapshot.error}', textAlign: TextAlign.center));
+          }
+
+          final educations = snapshot.data ?? [];
+          if (educations.isEmpty) {
+            return const Center(
+              child: Text(
+                'Bu kategoride henüz eğitim yok.\nSağ alt köşeden yeni bir eğitim ekleyebilirsiniz.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: educations.length,
+            itemBuilder: (context, index) {
+              final item = educations[index];
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.play_arrow, color: Colors.blue, size: 32),
+                  ),
+                  title: Text(item['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text('Yayıncı: ${item['publisher_name']}', style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(item['media_url'], style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                  onTap: () {
+                    // İleride mediaUrl'i bir webview veya url_launcher ile açabiliriz.
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link kopyalandı veya oynatıcı yakında eklenecek!')));
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddEducationSheet,
+        icon: const Icon(Icons.add),
+        label: const Text('Eğitim Ekle'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+}
