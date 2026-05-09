@@ -55,13 +55,25 @@ class AuthGate extends StatelessWidget {
         if (session != null) {
           // Kullanıcı giriş yaptı ama Şirket/Kullanıcı onay durumu nedir?
           return FutureBuilder(
-            future: Supabase.instance.client.from('profiles').select('approval_status').eq('id', session.user.id).maybeSingle(),
+            future: Supabase.instance.client.from('profiles').select('role, approval_status').eq('id', session.user.id).maybeSingle(),
             builder: (context, AsyncSnapshot<Map<String, dynamic>?> profileSnapshot) {
               if (profileSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
               
-              if (profileSnapshot.hasData) {
+              if (profileSnapshot.hasError) {
+                // Veritabanında sütun eksikse buraya düşer ve girmesine izin vermez
+                return Scaffold(
+                  body: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Text('Veritabanı Şema Hatası: ${profileSnapshot.error} \n\nLütfen Supabase panelinden company_description ve approval_status sütunlarını eklediğinizden emin olun.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                    ),
+                  ),
+                );
+              }
+              
+              if (profileSnapshot.hasData && profileSnapshot.data != null) {
                 final status = profileSnapshot.data!['approval_status'];
                 if (status == 'pending') {
                   return const PendingApprovalPage();
