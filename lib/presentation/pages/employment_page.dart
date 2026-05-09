@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/job_model.dart';
 import '../../data/repositories/job_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'job_detail_page.dart';
 import 'profile_page.dart';
 import 'inbox_page.dart';
@@ -16,11 +17,23 @@ class _EmploymentPageState extends State<EmploymentPage> {
   final _repository = JobRepository();
   late Future<List<Job>> _jobsFuture;
   final TextEditingController _searchController = TextEditingController();
+  bool _isCompany = false;
 
   @override
   void initState() {
     super.initState();
+    _checkRole();
     _jobsFuture = _repository.getJobs();
+  }
+
+  Future<void> _checkRole() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final data = await Supabase.instance.client.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      if (mounted && data != null && data['role'] == 'company') {
+        setState(() { _isCompany = true; });
+      }
+    }
   }
 
   @override
@@ -219,7 +232,7 @@ class _EmploymentPageState extends State<EmploymentPage> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: _isCompany ? FloatingActionButton.extended(
         onPressed: () {
           showModalBottomSheet(
             context: context,
@@ -236,7 +249,7 @@ class _EmploymentPageState extends State<EmploymentPage> {
         label: const Text('Yeni İlan Aç'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
-      ),
+      ) : null,
     );
   }
 }

@@ -12,11 +12,23 @@ class DeviceSupportPage extends StatefulWidget {
 class _DeviceSupportPageState extends State<DeviceSupportPage> {
   final _supabase = Supabase.instance.client;
   Future<List<dynamic>>? _devicesFuture;
+  bool _isCompany = false;
 
   @override
   void initState() {
     super.initState();
+    _checkRole();
     _loadDevices();
+  }
+
+  Future<void> _checkRole() async {
+    final user = _supabase.auth.currentUser;
+    if (user != null) {
+      final data = await _supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      if (mounted && data != null && data['role'] == 'company') {
+        setState(() { _isCompany = true; });
+      }
+    }
   }
 
   void _loadDevices() {
@@ -203,12 +215,12 @@ class _DeviceSupportPageState extends State<DeviceSupportPage> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: _isCompany ? FloatingActionButton.extended(
         onPressed: _showAddDeviceSheet,
         icon: const Icon(Icons.add),
         label: const Text('Cihaz Ekle'),
         backgroundColor: Colors.orange,
-      ),
+      ) : null,
     );
   }
 }
