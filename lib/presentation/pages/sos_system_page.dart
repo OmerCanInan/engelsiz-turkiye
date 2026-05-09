@@ -158,8 +158,8 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
         // Mesafe hesapla (metre)
         double distance = Geolocator.distanceBetween(lat, lng, volLat, volLng);
         
-        // 2 km (2000 metre) içindeyse bildirim at
-        if (distance <= 2000) {
+        // 10 km (10000 metre) içindeyse bildirim at (Hackathon için esnetildi)
+        if (distance <= 10000) {
           await _supabase.from('notifications').insert({
             'user_id': vol['user_id'],
             'title': 'ACİL: YAKININIZDA SOS SİNYALİ!',
@@ -229,7 +229,7 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 32.0),
                   child: Text(
-                    'Yakınınızdaki (2KM) gönüllülere bildirim gönderildi. Lütfen bulunduğunuz yerde bekleyin.',
+                    'Yakınınızdaki (10KM) gönüllülere bildirim gönderildi. Lütfen bulunduğunuz yerde bekleyin.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
@@ -307,10 +307,17 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
 
     final data = await _supabase.from('sos_volunteers').select().eq('user_id', user.id).maybeSingle();
     if (data != null && data['is_active'] == true) {
-      setState(() {
-        _isListening = true;
-      });
-      _startListening();
+      try {
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        _myPosition = position;
+        
+        setState(() {
+          _isListening = true;
+        });
+        _startListening();
+      } catch (e) {
+        debugPrint('Konum alınamadı: $e');
+      }
     }
   }
 
@@ -383,7 +390,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       List<dynamic> nearbySignals = [];
       for (var sig in signals) {
         double dist = Geolocator.distanceBetween(_myPosition!.latitude, _myPosition!.longitude, sig['latitude'], sig['longitude']);
-        if (dist <= 2000) { // Sadece 2KM içindekiler
+        if (dist <= 10000) { // Sadece 10KM içindekiler (Hackathon)
           sig['distance'] = dist;
           nearbySignals.add(sig);
         }
@@ -434,7 +441,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
                       const SizedBox(height: 8),
                       Text(
                         _isListening 
-                          ? 'Şu anda 2 km çevrenizdeki SOS sinyalleri taranıyor. Acil durumlarda aşağıda belirecektir.'
+                          ? 'Şu anda 10 km çevrenizdeki SOS sinyalleri taranıyor. Acil durumlarda aşağıda belirecektir.'
                           : 'Yakınınızdaki engelli bireylere yardım etmek için gönüllü modunu aktifleştirin.',
                       ),
                     ],
