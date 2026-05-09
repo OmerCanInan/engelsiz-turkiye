@@ -118,24 +118,16 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 24),
                 
                 if (isCompany) ...[
-                  const Text('Yayınladığım İlanlar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  _buildCompanyJobsList(),
+                  _buildFolderTile('Yayınladığım İlanlar', Icons.work, _buildCompanyJobsList(), Colors.blue),
                 ] else ...[
-                  const Text('İş Başvurularım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  _buildUserApplicationsList(),
+                  _buildFolderTile('İş Başvurularım', Icons.check_circle_outline, _buildUserApplicationsList(), Colors.green),
                 ],
                 
-                const SizedBox(height: 32),
-                const Text('Yayınladığım Cihazlar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                _buildMyDevicesList(),
+                _buildFolderTile('Yayınladığım Cihazlar', Icons.devices_other, _buildMyDevicesList(), Colors.orange),
                 
-                const SizedBox(height: 32),
-                const Text('Cihaz Başvurularım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                _buildMyDeviceApplicationsList(),
+                _buildFolderTile('Cihaz Başvurularım', Icons.assignment, _buildMyDeviceApplicationsList(), Colors.purple),
 
                 const SizedBox(height: 48),
                 _buildLogoutButton(),
@@ -169,6 +161,26 @@ class _ProfilePageState extends State<ProfilePage> {
               backgroundColor: isCompany ? Colors.orange : Colors.blue,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFolderTile(String title, IconData icon, Widget childList, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color),
+          ),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          childrenPadding: const EdgeInsets.all(16),
+          children: [childList],
         ),
       ),
     );
