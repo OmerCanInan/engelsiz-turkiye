@@ -496,7 +496,11 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
                                 await launchUrl(uri);
                               }
                             },
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red, 
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(100, 40), // Global temadaki double.infinity'yi eziyoruz
+                            ),
                             child: const Text('HARİTADA AÇ'),
                           ),
                         ),
