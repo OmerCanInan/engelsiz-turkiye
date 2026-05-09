@@ -244,6 +244,22 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))
                   ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse('tel:112');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    }
+                  },
+                  icon: const Icon(Icons.phone, color: Colors.white),
+                  label: const Text('112 İLE İLETİŞİME GEÇ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade800,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))
+                  ),
                 )
               ],
             )
@@ -274,6 +290,7 @@ class SosVolunteerPage extends StatefulWidget {
 class _SosVolunteerPageState extends State<SosVolunteerPage> {
   final _supabase = Supabase.instance.client;
   bool _isListening = false;
+  bool _isLoadingLocation = false;
   List<dynamic> _activeSignals = [];
   Timer? _refreshTimer;
   Position? _myPosition;
@@ -302,6 +319,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
     if (user == null) return;
 
     if (_isListening) {
+      setState(() { _isLoadingLocation = true; });
       // Dinlemeyi Kapat
       await _supabase.from('sos_volunteers').upsert({
         'user_id': user.id,
@@ -310,30 +328,41 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       _refreshTimer?.cancel();
       setState(() {
         _isListening = false;
+        _isLoadingLocation = false;
         _activeSignals = [];
       });
     } else {
+      setState(() { _isLoadingLocation = true; });
       // Dinlemeyi Aç
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+      try {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+          if (permission == LocationPermission.denied) {
+            setState(() { _isLoadingLocation = false; });
+            return;
+          }
+        }
+
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        _myPosition = position;
+
+        await _supabase.from('sos_volunteers').upsert({
+          'user_id': user.id,
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'is_active': true,
+        });
+
+        setState(() {
+          _isListening = true;
+          _isLoadingLocation = false;
+        });
+        _startListening();
+      } catch (e) {
+        setState(() { _isLoadingLocation = false; });
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e')));
       }
-
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      _myPosition = position;
-
-      await _supabase.from('sos_volunteers').upsert({
-        'user_id': user.id,
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'is_active': true,
-      });
-
-      setState(() {
-        _isListening = true;
-      });
-      _startListening();
     }
   }
 
@@ -411,11 +440,16 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
                     ],
                   ),
                 ),
-                Switch(
-                  value: _isListening,
-                  activeColor: Colors.green,
-                  onChanged: (val) => _toggleListening(),
-                )
+                _isLoadingLocation 
+                  ? const Padding(
+                      padding: EdgeInsets.only(right: 12.0),
+                      child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.green, strokeWidth: 3)),
+                    )
+                  : Switch(
+                      value: _isListening,
+                      activeColor: Colors.green,
+                      onChanged: (val) => _toggleListening(),
+                    )
               ],
             ),
           ),
