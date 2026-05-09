@@ -167,6 +167,140 @@ class _EmploymentPageState extends State<EmploymentPage> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+            builder: (context) => _CreateJobSheet(onSaved: () {
+              setState(() {
+                _jobsFuture = _repository.getJobs();
+              });
+            }),
+          );
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Yeni İlan Aç'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+}
+
+class _CreateJobSheet extends StatefulWidget {
+  final VoidCallback onSaved;
+  const _CreateJobSheet({required this.onSaved});
+
+  @override
+  State<_CreateJobSheet> createState() => _CreateJobSheetState();
+}
+
+class _CreateJobSheetState extends State<_CreateJobSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _companyController = TextEditingController();
+  final _descController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _salaryController = TextEditingController();
+  
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _companyController.dispose();
+    _descController.dispose();
+    _locationController.dispose();
+    _salaryController.dispose();
+    super.dispose();
+  }
+
+  void _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      await JobRepository().createJob(
+        title: _titleController.text,
+        companyName: _companyController.text,
+        description: _descController.text,
+        location: _locationController.text,
+        salaryRange: _salaryController.text,
+        friendlyFeatures: ['Tekerlekli Sandalye Uygun', 'Esnek Çalışma'], // Varsayılan özellikler
+        requirements: ['En az lise mezunu'],
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onSaved();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('İlan başarıyla yayınlandı!'), backgroundColor: Colors.green));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 24, right: 24, top: 24,
+      ),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Yeni İş İlanı Oluştur', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'İlan Başlığı (Örn: Yazılım Uzmanı)', prefixIcon: Icon(Icons.work)),
+                validator: (v) => v!.isEmpty ? 'Başlık zorunlu' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _companyController,
+                decoration: const InputDecoration(labelText: 'Şirket Adı', prefixIcon: Icon(Icons.business)),
+                validator: (v) => v!.isEmpty ? 'Şirket adı zorunlu' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(labelText: 'Çalışma Yeri (Örn: İstanbul - Uzaktan)', prefixIcon: Icon(Icons.location_on)),
+                validator: (v) => v!.isEmpty ? 'Konum zorunlu' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _salaryController,
+                decoration: const InputDecoration(labelText: 'Maaş Aralığı (Örn: 20.000₺ - 30.000₺)', prefixIcon: Icon(Icons.attach_money)),
+                validator: (v) => v!.isEmpty ? 'Maaş aralığı zorunlu' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _descController,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'İş Tanımı ve Detaylar', prefixIcon: Icon(Icons.description)),
+                validator: (v) => v!.isEmpty ? 'Açıklama zorunlu' : null,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('İLANI YAYINLA'),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

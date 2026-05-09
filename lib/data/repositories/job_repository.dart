@@ -36,4 +36,30 @@ class JobRepository {
       throw Exception('Arama Hatası: $e');
     }
   }
+
+  Future<void> createJob({
+    required String title,
+    required String companyName,
+    required String description,
+    required String location,
+    required String salaryRange,
+    required List<String> friendlyFeatures,
+    required List<String> requirements,
+  }) async {
+    try {
+      await _client.from('jobs').insert({
+        'company_id': _client.auth.currentUser!.id,
+        'title': title,
+        'company_name': companyName,
+        'description': description,
+        'location': location,
+        'salary_range': salaryRange,
+        'disability_friendly_features': friendlyFeatures,
+        'requirements': requirements,
+      });
+    } catch (e) {
+      debugPrint('İlan Oluşturma Hatası: $e');
+      throw Exception('İlan oluşturulamadı: $e');
+    }
+  }
 }

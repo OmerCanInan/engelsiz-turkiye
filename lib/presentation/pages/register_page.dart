@@ -14,15 +14,16 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _descController = TextEditingController();
   bool _isLoading = false;
   bool _isCompany = false; // Şirket mi?
 
   @override
   void dispose() {
-    // MEM: Bellek sızıntısını önlemek için controller'lar dispose edilmeli
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _descController.dispose();
     super.dispose();
   }
 
@@ -35,12 +36,30 @@ class _RegisterPageState extends State<RegisterPage> {
           password: _passwordController.text,
           fullName: _nameController.text,
           isCompany: _isCompany,
+          companyDescription: _isCompany ? _descController.text : null,
         );
         
-        // Supabase otomatik giriş yaptığı için alt tarafta Ana Menü yüklendi.
-        // Bu sayfayı (Kayıt Ol) kapatıp Ana Menü'yü gösteriyoruz.
-        if (mounted) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
+        if (_isCompany) {
+          // Şirket ise onay bekleyeceği için sistemden anında çıkış yaptır.
+          await AuthService().signOut();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Şirket kayıt isteğiniz oluşturulmuştur. Onay durumunuz mail ile bildirilecektir.', style: TextStyle(color: Colors.white)), 
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 5),
+              ),
+            );
+            Navigator.of(context).pop(); // Sadece login'e at
+          }
+        } else {
+          // Normal kullanıcıysa başarılı mesajı ver ve içeri al
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Kayıt Başarılı! Hoş geldiniz.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+            );
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
         }
       } on AuthException catch (e) {
         String message = 'Kayıt Hatası: ${e.message}';
@@ -128,6 +147,19 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
               ),
+              if (_isCompany) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Kısaca Şirketinizden Bahsedin',
+                    prefixIcon: Icon(Icons.business_center_outlined),
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (v) => v!.isEmpty ? 'Onay için şirket açıklaması zorunludur' : null,
+                ),
+              ],
               const SizedBox(height: 40),
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleRegister,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import 'register_page.dart';
 
@@ -31,11 +32,28 @@ class _LoginPageState extends State<LoginPage> {
         _emailController.text,
         _passwordController.text,
       );
-      // Başarılı girişte yönlendirme otomatik olacak veya main.dart'ta dinlenecek
+      // Başarılı girişte AuthGate otomatik yönlendirir
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Giriş Başarılı! Yönlendiriliyorsunuz...', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+        );
+      }
+    } on AuthException catch (e) {
+      String msg = 'Giriş Hatası: ${e.message}';
+      if (e.message.contains('Invalid login credentials')) {
+        msg = 'Hatalı e-posta veya şifre girdiniz.';
+      } else if (e.message.contains('Email not confirmed')) {
+        msg = 'Bu e-posta onay bekliyor. (Şirket onayı süreci olabilir)';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg, style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
+          SnackBar(content: Text('Hata: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
         );
       }
     } finally {

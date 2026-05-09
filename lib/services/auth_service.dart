@@ -18,6 +18,7 @@ class AuthService {
     required String password,
     required String fullName,
     bool isCompany = false,
+    String? companyDescription,
   }) async {
     final response = await _client.auth.signUp(
       email: email,
@@ -34,6 +35,8 @@ class AuthService {
           'id': response.user!.id,
           'full_name': fullName,
           'role': isCompany ? 'company' : 'user',
+          'company_description': companyDescription,
+          'approval_status': isCompany ? 'pending' : 'approved',
         });
       } catch (e) {
         debugPrint('Profile Insert Hatası (Önemsiz): $e');
