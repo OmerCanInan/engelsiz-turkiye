@@ -11,15 +11,8 @@ import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/admin_panel_page.dart';
 import 'presentation/pages/talkback_main_page.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
-final ValueNotifier<bool> accessibilityModeNotifier = ValueNotifier<bool>(false);
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  final prefs = await SharedPreferences.getInstance();
-  accessibilityModeNotifier.value = prefs.getBool('accessibility_mode') ?? false;
 
   try {
     await Supabase.initialize(
@@ -55,9 +48,38 @@ class AuthGate extends StatefulWidget {
   State<AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends State<AuthGate> {
+class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   Future<Map<String, dynamic>?>? _profileFuture;
   String? _lastUserId;
+  bool _isTalkBackOn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkTalkBackState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    super.didChangeAccessibilityFeatures();
+    _checkTalkBackState();
+  }
+
+  void _checkTalkBackState() {
+    final bool isAccessible = WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.accessibleNavigation;
+    if (_isTalkBackOn != isAccessible) {
+      setState(() {
+        _isTalkBackOn = isAccessible;
+      });
+    }
+  }
 
   void _fetchProfileIfNeeded(String userId) {
     if (userId != _lastUserId) {
@@ -117,30 +139,21 @@ class _AuthGateState extends State<AuthGate> {
                 }
                 
                 // Normal kullanıcılar veya onaylı şirketler ana menüye geçer
-                return ValueListenableBuilder<bool>(
-                  valueListenable: accessibilityModeNotifier,
-                  builder: (context, isManualModeOn, child) {
-                    bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context) || isManualModeOn;
-                    if (isTalkBackOn) {
-                      return const TalkbackMainPage();
-                    }
-                    return const MainNavigationPage();
-                  },
-                );
+                // MediaQuery fallback
+                final bool isAccessibleNav = MediaQuery.accessibleNavigationOf(context);
+                if (_isTalkBackOn || isAccessibleNav) {
+                  return const TalkbackMainPage();
+                }
+                return const MainNavigationPage();
               }
               
               // Veri yoksa (Eski kullanıcılar veya hata durumu)
               // Hackathon için kullanıcıyı engellemek yerine ana menüye alalım
-              return ValueListenableBuilder<bool>(
-                valueListenable: accessibilityModeNotifier,
-                builder: (context, isManualModeOn, child) {
-                  bool isTalkBackOn = MediaQuery.accessibleNavigationOf(context) || isManualModeOn;
-                  if (isTalkBackOn) {
-                    return const TalkbackMainPage();
-                  }
-                  return const MainNavigationPage();
-                },
-              );
+              final bool isAccessibleNav = MediaQuery.accessibleNavigationOf(context);
+              if (_isTalkBackOn || isAccessibleNav) {
+                return const TalkbackMainPage();
+              }
+              return const MainNavigationPage();
             },
           );
         }
