@@ -215,6 +215,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   future: applicantsFuture,
                   builder: (context, snap) {
                     if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                    
+                    if (snap.hasError) {
+                      return Center(
+                        child: Text(
+                          'HATA OLUŞTU:\n${snap.error}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      );
+                    }
+
                     if (!snap.hasData || snap.data!.isEmpty) return const Center(child: Text('Başvuru yok.'));
                     
                     return ListView.builder(
