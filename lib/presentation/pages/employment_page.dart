@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/job_model.dart';
 import '../../data/repositories/job_repository.dart';
+import 'job_detail_page.dart';
 
 class EmploymentPage extends StatefulWidget {
   const EmploymentPage({super.key});
@@ -152,7 +153,10 @@ class _EmploymentPageState extends State<EmploymentPage> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
-                          // Detay sayfasına git
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => JobDetailPage(job: job)),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
