@@ -267,6 +267,39 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                   itemCount: educations.length,
                   itemBuilder: (context, index) {
                     final item = educations[index];
+                    final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+                    if (isTalkBack) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Semantics(
+                          button: true,
+                          label: '${item['title']} eğitimi. Yayıncı: ${item['publisher_name']}. Başlatmak için çift dokunun.',
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 120),
+                              backgroundColor: Colors.blue.shade900,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => VideoPlayerPage(videoUrl: item['media_url'], title: item['title'])));
+                            },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.play_circle_fill, size: 48),
+                                const SizedBox(height: 12),
+                                Text(item['title'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Text('Yayıncı: ${item['publisher_name']}', style: const TextStyle(fontSize: 18)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
                     return Card(
                       elevation: 2,
                       margin: const EdgeInsets.only(bottom: 16),
@@ -276,7 +309,7 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                         leading: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
+                            color: Colors.blue.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.play_arrow, color: Colors.blue, size: 32),
