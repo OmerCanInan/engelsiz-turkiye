@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'profile_page.dart';
 import 'rights_guide_page.dart';
+import 'issue_sharing_page.dart';
 
 class DailyLifePage extends StatelessWidget {
   const DailyLifePage({super.key});
@@ -67,6 +68,8 @@ class DailyLifePage extends StatelessWidget {
               onTap: () {
                 if (item['title'] == 'Hak Rehberi Sistemi') {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const RightsGuidePage()));
+                } else if (item['title'] == 'Sorun Paylaşım Sistemi') {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const IssueSharingPage()));
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('${item['title']} yakında eklenecek!')),
