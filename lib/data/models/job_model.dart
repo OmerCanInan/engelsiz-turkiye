@@ -23,15 +23,15 @@ class Job {
 
   factory Job.fromMap(Map<String, dynamic> map) {
     return Job(
-      id: map['id'],
-      title: map['title'],
-      companyName: map['company_name'],
-      description: map['description'] ?? '',
-      requirements: List<String>.from(map['requirements'] ?? []),
-      friendlyFeatures: List<String>.from(map['disability_friendly_features'] ?? []),
-      salaryRange: map['salary_range'] ?? '',
-      location: map['location'] ?? '',
-      createdAt: DateTime.parse(map['created_at']),
+      id: map['id']?.toString() ?? '',
+      title: map['title']?.toString() ?? 'İsimsiz İlan',
+      companyName: map['company_name']?.toString() ?? 'Bilinmeyen Şirket',
+      description: map['description']?.toString() ?? 'Açıklama belirtilmemiş.',
+      requirements: (map['requirements'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      friendlyFeatures: (map['disability_friendly_features'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      salaryRange: map['salary_range']?.toString() ?? 'Belirtilmedi',
+      location: map['location']?.toString() ?? 'Konum yok',
+      createdAt: map['created_at'] != null ? DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now() : DateTime.now(),
     );
   }
 }

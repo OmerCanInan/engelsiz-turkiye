@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -14,6 +15,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   bool _isLoading = false;
+  bool _isCompany = false; // Şirket mi?
 
   @override
   void dispose() {
@@ -32,23 +34,31 @@ class _RegisterPageState extends State<RegisterPage> {
           email: _emailController.text,
           password: _passwordController.text,
           fullName: _nameController.text,
-          disabilityType: 'belirtilmedi', // Rapor gereği seçimleri kaldırdık
-          disabilityPercentage: 0,
+          isCompany: _isCompany,
         );
+        
+        // Supabase otomatik giriş yaptığı için alt tarafta Ana Menü yüklendi.
+        // Bu sayfayı (Kayıt Ol) kapatıp Ana Menü'yü gösteriyoruz.
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } on AuthException catch (e) {
+        String message = 'Kayıt Hatası: ${e.message}';
+        if (e.message.contains('User already registered')) {
+          message = 'Bu e-posta zaten kullanımda! Lütfen giriş yapmayı deneyin.';
+        } else if (e.message.contains('429')) {
+          message = 'Çok fazla istek yapıldı. Lütfen biraz bekleyin.';
+        }
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Kayıt başarılı! Giriş yapabilirsiniz.')),
+            SnackBar(content: Text(message, style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
           );
-          Navigator.pop(context);
         }
       } catch (e) {
-        String message = 'Hata: $e';
-        if (e.toString().contains('429')) {
-          message = 'Çok fazla istek yapıldı. Lütfen birkaç dakika bekleyin.';
-        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
+            SnackBar(content: Text('Beklenmeyen hata: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
           );
         }
       } finally {
@@ -77,10 +87,10 @@ class _RegisterPageState extends State<RegisterPage> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Ad Soyad',
+                  labelText: 'Ad Soyad / Kurum Adı',
                   prefixIcon: Icon(Icons.person_outline),
                 ),
-                validator: (v) => v!.isEmpty ? 'Ad soyad gerekli' : null,
+                validator: (v) => v!.isEmpty ? 'Ad soyad veya kurum adı gerekli' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -100,6 +110,23 @@ class _RegisterPageState extends State<RegisterPage> {
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
                 validator: (v) => v!.length < 6 ? 'Şifre en az 6 karakter olmalı' : null,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SwitchListTile(
+                  title: const Text('Kurumsal Hesap (İşveren)'),
+                  subtitle: const Text('İş ilanı vermek isteyen şirketler için.'),
+                  value: _isCompany,
+                  onChanged: (val) {
+                    setState(() {
+                      _isCompany = val;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 40),
               ElevatedButton(

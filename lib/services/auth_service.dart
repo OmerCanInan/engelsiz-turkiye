@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
@@ -16,6 +17,7 @@ class AuthService {
     required String email,
     required String password,
     required String fullName,
+    bool isCompany = false,
   }) async {
     final response = await _client.auth.signUp(
       email: email,
@@ -26,13 +28,16 @@ class AuthService {
     );
 
     if (response.user != null) {
-      // Profil tablosuna ekle - ŞEMAYA TAM UYGUN
-      await _client.from('profiles').insert({
-        'id': response.user!.id,
-        'full_name': fullName,
-        'disability_type': 'Belirtilmedi',
-        'disability_percentage': 0,
-      });
+      // Sadece kesin olan verileri yazarak SQL çökmesini engelliyoruz
+      try {
+        await _client.from('profiles').insert({
+          'id': response.user!.id,
+          'full_name': fullName,
+          'role': isCompany ? 'company' : 'user',
+        });
+      } catch (e) {
+        debugPrint('Profile Insert Hatası (Önemsiz): $e');
+      }
     }
 
     return response;

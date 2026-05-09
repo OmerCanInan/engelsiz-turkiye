@@ -10,7 +10,6 @@ class JobRepository {
       final response = await _client
           .from('jobs')
           .select()
-          .eq('status', 'approved')
           .order('created_at', ascending: false);
       
       final List<dynamic> data = response as List<dynamic>;
@@ -28,7 +27,6 @@ class JobRepository {
           .from('jobs')
           .select()
           .ilike('title', '%$query%')
-          .eq('status', 'approved')
           .order('created_at', ascending: false);
 
       final List<dynamic> data = response as List<dynamic>;

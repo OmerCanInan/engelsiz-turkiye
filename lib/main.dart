@@ -47,22 +47,15 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        // Eğer cihazda halihazırda aktif bir oturum (session) varsa beklemeye gerek yok
-        final session = Supabase.instance.client.auth.currentSession;
+        // Bağlantı hatası veya bekleyen durum kontrolü
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        
+        final session = snapshot.data?.session;
         if (session != null) {
           return const MainNavigationPage();
         }
-
-        // Eğer veriler akmaya başladıysa veya hata varsa
-        if (snapshot.connectionState == ConnectionState.active) {
-          if (snapshot.data?.session != null) {
-            return const MainNavigationPage();
-          } else {
-            return const LoginPage();
-          }
-        }
-
-        // Kısa süreli bir bekleme anında bile LoginPage'i göster, takılı kalmasın
         return const LoginPage();
       },
     );
