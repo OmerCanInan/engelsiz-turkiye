@@ -27,15 +27,94 @@ void main() async {
   runApp(const ErisilebilirTurkiyeApp());
 }
 
-class ErisilebilirTurkiyeApp extends StatelessWidget {
+class ErisilebilirTurkiyeApp extends StatefulWidget {
   const ErisilebilirTurkiyeApp({super.key});
 
   @override
+  State<ErisilebilirTurkiyeApp> createState() => _ErisilebilirTurkiyeAppState();
+}
+
+class _ErisilebilirTurkiyeAppState extends State<ErisilebilirTurkiyeApp> with WidgetsBindingObserver {
+  bool _isTalkBackOn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkTalkBackState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    super.didChangeAccessibilityFeatures();
+    _checkTalkBackState();
+  }
+
+  void _checkTalkBackState() {
+    final bool isAccessible = WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.accessibleNavigation;
+    if (_isTalkBackOn != isAccessible) {
+      setState(() {
+        _isTalkBackOn = isAccessible;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // TalkBack açıksa global olarak kapkaranlık, yüksek kontrastlı ve dev fontlu tema uygula
+    final talkbackTheme = ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: Colors.black,
+      primaryColor: Colors.white,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white, size: 48),
+        titleTextStyle: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+      ),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+        bodyMedium: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
+        titleLarge: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          minimumSize: const Size(double.infinity, 80),
+          textStyle: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Colors.white, width: 4),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.grey.shade900,
+        labelStyle: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white, width: 3),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white, width: 3),
+        ),
+      ),
+    );
+
     return MaterialApp(
       title: 'Erişilebilir Türkiye',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: _isTalkBackOn ? talkbackTheme : AppTheme.lightTheme,
       home: const AuthGate(),
     );
   }
