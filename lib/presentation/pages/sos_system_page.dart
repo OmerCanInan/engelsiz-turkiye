@@ -175,7 +175,7 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
 
   Future<void> _stopSos() async {
     if (_signalId != null) {
-      await _supabase.from('sos_signals').update({'status': 'resolved'}).eq('id', _signalId);
+      await _supabase.from('sos_signals').update({'status': 'resolved'}).eq('id', _signalId!);
     }
     if (mounted) {
       Navigator.pop(context);
