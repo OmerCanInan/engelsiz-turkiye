@@ -2,7 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:url_launcher/url_launcher.dart';
+
+// ==========================================
+// GPS YUMUŞATMA FİLTRESİ (Konum Gürültüsünü Azaltır)
+// Son N ölçümün ortalamasını alarak donanımsal sapmaları düşürür.
+// ==========================================
+class PositionSmoother {
+  final int windowSize;
+  final List<Position> _buffer = [];
+
+  PositionSmoother({this.windowSize = 10});
+
+  void add(Position p) {
+    _buffer.add(p);
+    if (_buffer.length > windowSize) {
+      _buffer.removeAt(0);
+    }
+  }
+
+  Position? get smoothed {
+    if (_buffer.isEmpty) return null;
+    double avgLat = 0, avgLng = 0;
+    for (var p in _buffer) {
+      avgLat += p.latitude;
+      avgLng += p.longitude;
+    }
+    avgLat /= _buffer.length;
+    avgLng /= _buffer.length;
+    // Ortalamayı yeni bir Position olarak döndür
+    return Position(
+      latitude: avgLat,
+      longitude: avgLng,
+      timestamp: _buffer.last.timestamp,
+      accuracy: _buffer.last.accuracy,
+      altitude: _buffer.last.altitude,
+      altitudeAccuracy: _buffer.last.altitudeAccuracy,
+      heading: _buffer.last.heading,
+      headingAccuracy: _buffer.last.headingAccuracy,
+      speed: _buffer.last.speed,
+      speedAccuracy: _buffer.last.speedAccuracy,
+    );
+  }
+
+  void clear() => _buffer.clear();
+}
 
 class SosMainPage extends StatelessWidget {
   const SosMainPage({super.key});
@@ -153,6 +198,8 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
   late AnimationController _pulseController;
   Timer? _locationTimer;
   StreamSubscription<Position>? _positionStream;
+  final _sosSmoother = PositionSmoother(windowSize: 10);
+  Timer? _dbUpdateTimer;
 
   @override
   void initState() {
@@ -202,17 +249,25 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
       // 3. Yakındaki gönüllüleri bul ve bildirim at (Basit mesafe hesabı client-side)
       _notifyNearbyVolunteers(position.latitude, position.longitude);
 
-      // 4. Konumu saniyede birden fazla kez süper hızlı bir şekilde (Stream ile) yayınla
+      // 4. Konumu saniyede 5 kez ultra-hızlı ölçüp yumuşatma filtresi ile DB'ye yayınla
       _positionStream = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
+        locationSettings: AndroidSettings(
           accuracy: LocationAccuracy.bestForNavigation,
-          distanceFilter: 2, // 2 metrelik harekette tetikler (API limitine takılmamak için)
+          distanceFilter: 0, // Her ölçümü al
+          intervalDuration: const Duration(milliseconds: 200), // Saniyede 5 ölçüm
+          forceLocationManager: false, // Google FusedLocationProvider kullan
         ),
       ).listen((Position pos) {
-        if (_signalId != null) {
+        _sosSmoother.add(pos); // Ölçümü tampona ekle
+      });
+
+      // Yumuşatılmış konumu her saniye DB'ye yaz (API limitini aşmamak için)
+      _dbUpdateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        final smoothed = _sosSmoother.smoothed;
+        if (smoothed != null && _signalId != null) {
           _supabase.from('sos_signals').update({
-            'latitude': pos.latitude,
-            'longitude': pos.longitude,
+            'latitude': smoothed.latitude,
+            'longitude': smoothed.longitude,
           }).eq('id', _signalId!);
         }
       });
@@ -272,6 +327,8 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
     _pulseController.dispose();
     _locationTimer?.cancel();
     _positionStream?.cancel();
+    _dbUpdateTimer?.cancel();
+    _sosSmoother.clear();
     _stopSos(); // Ekrandan çıkılırsa SOS kapansın
     super.dispose();
   }
@@ -399,6 +456,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   Timer? _refreshTimer;
   Position? _myPosition;
   StreamSubscription<Position>? _volunteerPositionStream;
+  final _volunteerSmoother = PositionSmoother(windowSize: 10);
 
   @override
   void initState() {
@@ -442,6 +500,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       }
       _refreshTimer?.cancel();
       _volunteerPositionStream?.cancel();
+      _volunteerSmoother.clear();
       setState(() {
         _isListening = false;
         _isLoadingLocation = false;
@@ -498,22 +557,26 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   void _startListening() {
     _fetchSignals(); // İlk çekim
     
-    // Gönüllünün kendi konumunu Stream ile anlık takip edip DB'ye yayınla
+    // Gönüllünün konumunu saniyede 5 kez ölçüp yumuşatma filtresi ile takip et
     _volunteerPositionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
+      locationSettings: AndroidSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 2, // 2 metre harekette tetikler (API limitini korumak için)
+        distanceFilter: 0, // Her ölçümü al
+        intervalDuration: const Duration(milliseconds: 200), // Saniyede 5 ölçüm
+        forceLocationManager: false, // Google FusedLocationProvider kullan
       ),
     ).listen((Position pos) {
-      if (!mounted) return;
+      _volunteerSmoother.add(pos);
+      final smoothed = _volunteerSmoother.smoothed;
+      if (!mounted || smoothed == null) return;
       
       setState(() {
-        _myPosition = pos;
+        _myPosition = smoothed;
         // Supabase beklemeden yerel listeyi milisaniyeler içinde anında güncelle
         for (var sig in _activeSignals) {
           double sigLat = (sig['latitude'] as num).toDouble();
           double sigLng = (sig['longitude'] as num).toDouble();
-          sig['distance'] = Geolocator.distanceBetween(pos.latitude, pos.longitude, sigLat, sigLng);
+          sig['distance'] = Geolocator.distanceBetween(smoothed.latitude, smoothed.longitude, sigLat, sigLng);
         }
         // Anında yeniden sırala
         _activeSignals.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
@@ -522,8 +585,8 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       final user = _supabase.auth.currentUser;
       if (user != null && _isListening) {
         _supabase.from('sos_volunteers').update({
-          'latitude': pos.latitude,
-          'longitude': pos.longitude,
+          'latitude': smoothed.latitude,
+          'longitude': smoothed.longitude,
         }).eq('user_id', user.id);
       }
     });
@@ -567,6 +630,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   void dispose() {
     _refreshTimer?.cancel();
     _volunteerPositionStream?.cancel();
+    _volunteerSmoother.clear();
     super.dispose();
   }
 
