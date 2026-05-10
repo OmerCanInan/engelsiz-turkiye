@@ -412,10 +412,13 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
     if (_isListening) {
       setState(() { _isLoadingLocation = true; });
       // Dinlemeyi Kapat
-      await _supabase.from('sos_volunteers').upsert({
-        'user_id': user.id,
-        'is_active': false,
-      });
+      try {
+        await _supabase.from('sos_volunteers').update({
+          'is_active': false,
+        }).eq('user_id', user.id);
+      } catch (e) {
+        debugPrint('Kapatırken hata: $e');
+      }
       _refreshTimer?.cancel();
       setState(() {
         _isListening = false;
@@ -442,12 +445,21 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
         Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
         _myPosition = position;
 
-        await _supabase.from('sos_volunteers').upsert({
-          'user_id': user.id,
-          'latitude': position.latitude,
-          'longitude': position.longitude,
-          'is_active': true,
-        });
+        final existing = await _supabase.from('sos_volunteers').select().eq('user_id', user.id).maybeSingle();
+        if (existing != null) {
+          await _supabase.from('sos_volunteers').update({
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+            'is_active': true,
+          }).eq('user_id', user.id);
+        } else {
+          await _supabase.from('sos_volunteers').insert({
+            'user_id': user.id,
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+            'is_active': true,
+          });
+        }
 
         setState(() {
           _isListening = true;
