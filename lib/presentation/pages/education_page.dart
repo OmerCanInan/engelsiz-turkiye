@@ -8,6 +8,58 @@ class EducationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+    if (isTalkBack) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Eğitim Akademisi', style: TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          children: [
+            Semantics(
+              header: true,
+              child: const Text(
+                'Görme Engelliler İçin Eğitimler',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildCategoryGrid(
+              context,
+              targetAudience: 'Görme Engelliler',
+              categories: [
+                {'title': 'Şirketlerin Yayınladığı Eğitimler', 'icon': Icons.business, 'color': Colors.blue.shade900},
+                {'title': 'Genel Eğitimler', 'icon': Icons.public, 'color': Colors.blue.shade900},
+              ],
+            ),
+            const SizedBox(height: 32),
+            Semantics(
+              header: true,
+              child: const Text(
+                'Diğer Bireyler İçin Eğitimler',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildCategoryGrid(
+              context,
+              targetAudience: 'Diğer Bireyler',
+              categories: [
+                {'title': 'İşaret Dili Eğitimi', 'icon': Icons.sign_language, 'color': Colors.blue.shade900},
+                {'title': 'Şirketler İçin Eğitimler', 'icon': Icons.business_center, 'color': Colors.blue.shade900},
+                {'title': 'Öğrenme Engeli Olanlara Özel', 'icon': Icons.psychology, 'color': Colors.blue.shade900},
+                {'title': 'Duyma Engeli Olanlara Özel', 'icon': Icons.hearing_disabled, 'color': Colors.blue.shade900},
+                {'title': 'Genel Eğitimler', 'icon': Icons.library_books, 'color': Colors.blue.shade900},
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
