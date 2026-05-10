@@ -165,6 +165,7 @@ class _EducationCategoryPageState extends State<EducationCategoryPage> {
                                       'target_audience': widget.targetAudience,
                                       'title': titleDesc,
                                       'publisher_name': publisherName,
+                                      'publisher_id': _supabase.auth.currentUser?.id,
                                       'media_url': publicUrl,
                                       'status': 'pending', // Admin onayı için bekliyor
                                     });
