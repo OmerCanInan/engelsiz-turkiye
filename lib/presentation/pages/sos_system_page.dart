@@ -176,7 +176,7 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
         throw Exception('Konum izni kalıcı olarak reddedildi. Lütfen cihaz ayarlarından konumu açın.');
       }
       
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
       
       // 2. SOS Sinyalini Veritabanına Yaz
       final user = _supabase.auth.currentUser;
@@ -392,7 +392,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
     final data = await _supabase.from('sos_volunteers').select().eq('user_id', user.id).maybeSingle();
     if (data != null && data['is_active'] == true) {
       try {
-        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
         _myPosition = position;
         
         setState(() {
@@ -442,7 +442,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
           throw Exception('Konum izni kalıcı olarak reddedildi. Lütfen cihaz ayarlarından konumu açın.');
         }
 
-        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
         _myPosition = position;
 
         final existing = await _supabase.from('sos_volunteers').select().eq('user_id', user.id).maybeSingle();
@@ -486,7 +486,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
 
     try {
       // 1. Gönüllünün kendi konumunu sürekli GÜNCELLE (Hareket ettikçe mesafe değişsin)
-      _myPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      _myPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
 
       // 2. Aktif sinyalleri çek
       final signals = await _supabase.from('sos_signals').select('*, profiles(phone_number)').eq('status', 'active');
