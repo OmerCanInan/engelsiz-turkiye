@@ -9,6 +9,62 @@ class SosMainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isTalkBack = MediaQuery.accessibleNavigationOf(context);
+
+    if (isTalkBack) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Acil Durum Paneli')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Semantics(
+              button: true,
+              label: 'Acil Yardım İste. Hemen S O S sinyali başlatmak için çift dokunun.',
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 150),
+                  backgroundColor: Colors.red.shade900,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosActivePage())),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.warning_amber, size: 64),
+                    SizedBox(height: 16),
+                    Text('ACİL YARDIM İSTE (SOS)', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Semantics(
+              button: true,
+              label: 'Gönüllü Ol. Yakındaki yardım sinyallerini dinlemek için çift dokunun.',
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 120),
+                  backgroundColor: Colors.green.shade900,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosVolunteerPage())),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.volunteer_activism, size: 48),
+                    SizedBox(height: 12),
+                    Text('GÖNÜLLÜ SİNYALLERİ', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('SOS Gönüllü Sistemi'),
@@ -224,44 +280,62 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
                   ),
                 ),
                 const SizedBox(height: 48),
-                const Text(
-                  'SOS SİNYALİ GÖNDERİLİYOR',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                Semantics(
+                  header: true,
+                  child: const Text(
+                    'SOS SİNYALİ GÖNDERİLİYOR',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 32.0),
                   child: Text(
-                    'Yakınınızdaki (10KM) gönüllülere bildirim gönderildi. Lütfen bulunduğunuz yerde bekleyin.',
+                    'Yakınınızdaki gönüllülere bildirim gönderildi. Lütfen bulunduğunuz yerde bekleyin.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                    style: TextStyle(color: Colors.white70, fontSize: 18),
                   ),
                 ),
                 const SizedBox(height: 64),
-                ElevatedButton.icon(
-                  onPressed: _stopSos,
-                  icon: const Icon(Icons.cancel, color: Colors.red),
-                  label: const Text('SOS İPTAL ET / KAPAT', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Semantics(
+                    button: true,
+                    label: 'S O S Sinyalini İptal Et. Aramayı sonlandırmak için çift dokunun.',
+                    child: ElevatedButton.icon(
+                      onPressed: _stopSos,
+                      icon: const Icon(Icons.cancel, color: Colors.red, size: 36),
+                      label: const Text('İPTAL ET', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 24)),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 80),
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final uri = Uri.parse('tel:112');
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri);
-                    }
-                  },
-                  icon: const Icon(Icons.phone, color: Colors.white),
-                  label: const Text('112 İLE İLETİŞİME GEÇ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade800,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Semantics(
+                    button: true,
+                    label: '112 Acil Çağrı Merkezini Ara. Hemen aramak için çift dokunun.',
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final uri = Uri.parse('tel:112');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        }
+                      },
+                      icon: const Icon(Icons.phone, color: Colors.white, size: 36),
+                      label: const Text('112 Yİ ARA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 80),
+                        backgroundColor: Colors.blue.shade800,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      ),
+                    ),
                   ),
                 )
               ],
