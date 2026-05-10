@@ -34,6 +34,17 @@ class _InboxPageState extends State<InboxPage> {
     }
   }
 
+  Future<void> _deleteNotification(dynamic id) async {
+    try {
+      await _supabase.from('notifications').delete().eq('id', id);
+      _loadNotifications(); // Silince listeyi yenile
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Silinirken hata oluştu: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,6 +102,14 @@ class _InboxPageState extends State<InboxPage> {
                               const Icon(Icons.notifications, size: 40, color: Colors.white),
                               const SizedBox(width: 16),
                               Expanded(child: Text(notif['title'], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white))),
+                              Semantics(
+                                label: 'Bildirimi Sil',
+                                button: true,
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.redAccent, size: 36),
+                                  onPressed: () => _deleteNotification(notif['id']),
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -126,6 +145,10 @@ class _InboxPageState extends State<InboxPage> {
                       const SizedBox(height: 8),
                       Text(dateStr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => _deleteNotification(notif['id']),
                   ),
                 ),
               );
