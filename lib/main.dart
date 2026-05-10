@@ -10,7 +10,6 @@ import 'presentation/pages/daily_life_page.dart';
 import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/admin_panel_page.dart';
 import 'presentation/pages/talkback_main_page.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
