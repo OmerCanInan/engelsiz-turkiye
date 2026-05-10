@@ -205,6 +205,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hata: Supabase yetkilendirme (RLS) kısıtlaması nedeniyle güncellenemedi.')));
         return;
       }
+
+      // Bildirim gönder
+      String durumMesaji = status == 'approved' ? 'onaylandı. Artık ilan verebilirsiniz.' : 'reddedildi.';
+      await _supabase.from('notifications').insert({
+        'user_id': id,
+        'title': 'Şirket Hesabı Onay Sonucu',
+        'content': 'Şirket hesabınızın başvurusu $durumMesaji',
+      });
+
       _loadData();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Şirket durumu: $status')));
     } catch (e) {
@@ -219,6 +228,21 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hata: Supabase yetkilendirme (RLS) kısıtlaması nedeniyle güncellenemedi.')));
         return;
       }
+      
+      // Bildirim gönder
+      final edu = response[0];
+      final publisherId = edu['publisher_id'];
+      final title = edu['title'] ?? 'Eğitim';
+      String durumMesaji = status == 'approved' ? 'onaylandı ve yayına alındı' : 'reddedildi';
+      
+      if (publisherId != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': publisherId,
+          'title': 'Eğitim İlanı Sonucu',
+          'content': '"$title" başlıklı eğitim ilanınız $durumMesaji.',
+        });
+      }
+
       _loadData();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Eğitim durumu: $status')));
     } catch (e) {
