@@ -152,6 +152,7 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
   String? _signalId;
   late AnimationController _pulseController;
   Timer? _locationTimer;
+  StreamSubscription<Position>? _positionStream;
 
   @override
   void initState() {
@@ -201,7 +202,20 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
       // 3. Yakındaki gönüllüleri bul ve bildirim at (Basit mesafe hesabı client-side)
       _notifyNearbyVolunteers(position.latitude, position.longitude);
 
-      // 4. Konumu periyodik olarak güncelle (Opsiyonel, şimdilik sadece sabit SOS gönderimi yapıyoruz)
+      // 4. Konumu saniyede birden fazla kez süper hızlı bir şekilde (Stream ile) yayınla
+      _positionStream = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 0, // En ufak kıpırdamada anında tetikler
+        ),
+      ).listen((Position pos) {
+        if (_signalId != null) {
+          _supabase.from('sos_signals').update({
+            'latitude': pos.latitude,
+            'longitude': pos.longitude,
+          }).eq('id', _signalId!);
+        }
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e')));
@@ -257,6 +271,7 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
   void dispose() {
     _pulseController.dispose();
     _locationTimer?.cancel();
+    _positionStream?.cancel();
     _stopSos(); // Ekrandan çıkılırsa SOS kapansın
     super.dispose();
   }
@@ -383,6 +398,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   List<dynamic> _activeSignals = [];
   Timer? _refreshTimer;
   Position? _myPosition;
+  StreamSubscription<Position>? _volunteerPositionStream;
 
   @override
   void initState() {
@@ -425,6 +441,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
         debugPrint('Kapatırken hata: $e');
       }
       _refreshTimer?.cancel();
+      _volunteerPositionStream?.cancel();
       setState(() {
         _isListening = false;
         _isLoadingLocation = false;
@@ -480,20 +497,35 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
 
   void _startListening() {
     _fetchSignals(); // İlk çekim
-    // Her 5 saniyede bir sinyalleri güncelle
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    
+    // Gönüllünün kendi konumunu Stream ile anlık takip edip DB'ye yayınla
+    _volunteerPositionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 0, // En ufak harekette tetikler
+      ),
+    ).listen((Position pos) {
+      _myPosition = pos;
+      final user = _supabase.auth.currentUser;
+      if (user != null && _isListening) {
+        _supabase.from('sos_volunteers').update({
+          'latitude': pos.latitude,
+          'longitude': pos.longitude,
+        }).eq('user_id', user.id);
+      }
+    });
+
+    // Her saniyede 1 kere sinyalleri güncelle (Eskiden 5 saniyeydi, şimdi süper hızlı)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _fetchSignals();
     });
   }
 
   Future<void> _fetchSignals() async {
-    if (!_isListening) return;
+    if (!_isListening || _myPosition == null) return;
 
     try {
-      // 1. Gönüllünün kendi konumunu sürekli GÜNCELLE (Hareket ettikçe mesafe değişsin)
-      _myPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
-
-      // 2. Aktif sinyalleri çek
+      // 1. Aktif sinyalleri çek (Kendi konumumuz artık Stream ile _myPosition'da güncel tutuluyor)
       final signals = await _supabase.from('sos_signals').select('*, profiles(phone_number)').eq('status', 'active');
       
       List<dynamic> nearbySignals = [];
@@ -521,6 +553,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _volunteerPositionStream?.cancel();
     super.dispose();
   }
 
