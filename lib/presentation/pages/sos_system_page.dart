@@ -198,7 +198,7 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
   late AnimationController _pulseController;
   Timer? _locationTimer;
   StreamSubscription<Position>? _positionStream;
-  final _sosSmoother = PositionSmoother(windowSize: 10);
+  final _sosSmoother = PositionSmoother(windowSize: 5);
   Timer? _dbUpdateTimer;
 
   @override
@@ -456,7 +456,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   Timer? _refreshTimer;
   Position? _myPosition;
   StreamSubscription<Position>? _volunteerPositionStream;
-  final _volunteerSmoother = PositionSmoother(windowSize: 10);
+  final _volunteerSmoother = PositionSmoother(windowSize: 5);
 
   @override
   void initState() {
