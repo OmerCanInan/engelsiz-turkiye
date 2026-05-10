@@ -139,6 +139,17 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
     );
   }
 
+  Future<void> _launchUrl(String? urlString) async {
+    if (urlString == null || urlString.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dosya linki bulunamadı.')));
+      return;
+    }
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dosya açılamadı.')));
+    }
+  }
+
   Widget _buildEducationApprovals() {
     return FutureBuilder<List<dynamic>>(
       future: _educationsFuture,
@@ -173,6 +184,16 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
                     Text('Yayıncı: ${edu['publisher_name']}'),
                     Text('Kategori: ${edu['target_audience']} - ${edu['category']}'),
                     Text('Tarih: $dateStr'),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.file_present),
+                      label: const Text('Dosyayı Görüntüle'),
+                      onPressed: () => _launchUrl(edu['media_url']),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        backgroundColor: Colors.blue.shade50,
+                      ),
+                    ),
                   ],
                 ),
                 trailing: Row(
