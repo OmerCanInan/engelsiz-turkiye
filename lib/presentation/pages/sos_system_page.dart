@@ -591,8 +591,8 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       }
     });
 
-    // Sadece yeni sinyal var mı diye kontrol etmek için 3 saniyede bir ping at
-    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    // Her 2 saniyede bir DB'den sinyal koordinatlarını tazele
+    _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       _fetchSignals();
     });
   }
