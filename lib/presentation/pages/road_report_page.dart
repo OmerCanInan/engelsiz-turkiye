@@ -36,10 +36,7 @@ class _RoadReportPageState extends State<RoadReportPage> {
       }
 
       // 2. Mevcut Konumu Al
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      
-      final String latitude = position.latitude.toString();
-      final String longitude = position.longitude.toString();
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
       
       // 3. Veritabanına Yaz
       final user = Supabase.instance.client.auth.currentUser;
@@ -47,8 +44,8 @@ class _RoadReportPageState extends State<RoadReportPage> {
       await Supabase.instance.client.from('road_reports').insert({
         'user_id': user?.id,
         'description': _descController.text,
-        'latitude': latitude,
-        'longitude': longitude,
+        'latitude': position.latitude,
+        'longitude': position.longitude,
         'status': 'pending', // Bekliyor, admin çözecek
       });
 

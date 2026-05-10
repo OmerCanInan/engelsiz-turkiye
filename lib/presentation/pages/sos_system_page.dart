@@ -216,25 +216,18 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
       final volunteers = await _supabase.from('sos_volunteers').select().eq('is_active', true);
       
       for (var vol in volunteers) {
-        double volLat = vol['latitude'];
-        double volLng = vol['longitude'];
+        double volLat = (vol['latitude'] as num).toDouble();
+        double volLng = (vol['longitude'] as num).toDouble();
         
         // Mesafe hesapla (metre)
         double distance = Geolocator.distanceBetween(lat, lng, volLat, volLng);
         
         // 10 km (10000 metre) içindeyse bildirim at (Hackathon için esnetildi)
         if (distance <= 10000) {
-          String distanceText;
-          if (distance >= 1000) {
-            distanceText = '${(distance / 1000).toStringAsFixed(1)} kilometre';
-          } else {
-            distanceText = '${distance.toStringAsFixed(0)} metre';
-          }
-
           await _supabase.from('notifications').insert({
             'user_id': vol['user_id'],
             'title': 'ACİL: YAKININIZDA SOS SİNYALİ!',
-            'message': 'Yaklaşık $distanceText yakınınızda bir engelli birey acil yardım istiyor!',
+            'message': 'Yaklaşık ${_formatDistance(distance)} yakınınızda bir engelli birey acil yardım istiyor!',
             'type': 'sos_alert'
           });
         }
@@ -251,6 +244,13 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  String _formatDistance(double dist) {
+    if (dist >= 1000) {
+      return '${(dist / 1000).toStringAsFixed(1)} kilometre';
+    }
+    return '${dist.toStringAsFixed(0)} metre';
   }
 
   @override
@@ -498,7 +498,9 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       
       List<dynamic> nearbySignals = [];
       for (var sig in signals) {
-        double dist = Geolocator.distanceBetween(_myPosition!.latitude, _myPosition!.longitude, sig['latitude'], sig['longitude']);
+        double sigLat = (sig['latitude'] as num).toDouble();
+        double sigLng = (sig['longitude'] as num).toDouble();
+        double dist = Geolocator.distanceBetween(_myPosition!.latitude, _myPosition!.longitude, sigLat, sigLng);
         sig['distance'] = dist;
         nearbySignals.add(sig); // Hackathon demosu için menzil kısıtlaması tamamen kaldırıldı
       }
@@ -520,6 +522,13 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();
+  }
+
+  String _formatDistance(double dist) {
+    if (dist >= 1000) {
+      return '${(dist / 1000).toStringAsFixed(1)} km';
+    }
+    return '${dist.toStringAsFixed(0)} metre';
   }
 
   @override
@@ -588,13 +597,11 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
                     itemBuilder: (context, index) {
                       final sig = _activeSignals[index];
                       final dist = sig['distance'] as double;
-                      final lat = sig['latitude'];
-                      final lng = sig['longitude'];
+                      final sigLat = (sig['latitude'] as num).toDouble();
+                      final sigLng = (sig['longitude'] as num).toDouble();
                       final phone = sig['profiles']?['phone_number'];
 
-                      String distanceText = dist > 1000 
-                          ? '${(dist / 1000).toStringAsFixed(1)} km' 
-                          : '${dist.toStringAsFixed(0)} metre';
+                      String distanceText = _formatDistance(dist);
 
                       return Card(
                         color: Colors.red.shade50,
@@ -637,7 +644,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
                                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                                       child: ElevatedButton.icon(
                                         onPressed: () async {
-                                          final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+                                          final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$sigLat,$sigLng');
                                           if (await canLaunchUrl(uri)) {
                                             await launchUrl(uri);
                                           }
