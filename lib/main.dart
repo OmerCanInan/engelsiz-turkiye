@@ -191,6 +191,12 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
         
         final session = snapshot.data?.session;
         if (session != null) {
+          // ÖNCELİKLİ: E-posta bazlı admin kontrolü (RLS engeline takılmaz)
+          final email = session.user.email?.toLowerCase() ?? '';
+          if (email == 'admin@erisimturkiye.com') {
+            return const AdminPanelPage();
+          }
+
           _fetchProfileIfNeeded(session.user.id);
 
           // Kullanıcı giriş yaptı ama Şirket/Kullanıcı onay durumu nedir?
@@ -216,7 +222,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
                 final role = profileSnapshot.data!['role'];
                 final status = profileSnapshot.data!['approval_status'];
 
-                // Güvenli Admin Kontrolü
+                // Güvenli Admin Kontrolü (DB'den gelen rol)
                 if (role == 'admin') {
                   return const AdminPanelPage();
                 }
