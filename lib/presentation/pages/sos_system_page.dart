@@ -178,8 +178,13 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
       
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
       
-      // 2. SOS Sinyalini Veritabanına Yaz
+      // 2. Önce bu kullanıcının eski açık kalmış (hayalet) sinyallerini kapat
       final user = _supabase.auth.currentUser;
+      if (user != null) {
+        await _supabase.from('sos_signals').update({'status': 'resolved'}).eq('user_id', user.id).eq('status', 'active');
+      }
+
+      // 3. Yeni SOS Sinyalini Veritabanına Yaz
       final response = await _supabase.from('sos_signals').insert({
         'user_id': user?.id,
         'latitude': position.latitude,
