@@ -482,9 +482,13 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
   }
 
   Future<void> _fetchSignals() async {
-    if (!_isListening || _myPosition == null) return;
+    if (!_isListening) return;
 
     try {
+      // 1. Gönüllünün kendi konumunu sürekli GÜNCELLE (Hareket ettikçe mesafe değişsin)
+      _myPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+      // 2. Aktif sinyalleri çek
       final signals = await _supabase.from('sos_signals').select('*, profiles(phone_number)').eq('status', 'active');
       
       List<dynamic> nearbySignals = [];
@@ -503,7 +507,7 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
         });
       }
     } catch (e) {
-      debugPrint('Sinyaller çekilemedi: $e');
+      debugPrint('Sinyaller veya Konum çekilemedi: $e');
     }
   }
 
