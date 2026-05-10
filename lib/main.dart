@@ -112,7 +112,7 @@ class _ErisilebilirTurkiyeAppState extends State<ErisilebilirTurkiyeApp> with Wi
     );
 
     return MaterialApp(
-      title: 'Erişilebilir Türkiye',
+      title: 'Engelsiz Türkiye',
       debugShowCheckedModeBanner: false,
       locale: const Locale('tr', 'TR'),
       supportedLocales: const [
@@ -338,7 +338,7 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Erişilebilir Türkiye')),
+      appBar: AppBar(title: const Text('Engelsiz Türkiye')),
       body: const Center(
         child: Text('Dashboard Yüklendi. Lütfen menüden seçim yapın.'),
       ),

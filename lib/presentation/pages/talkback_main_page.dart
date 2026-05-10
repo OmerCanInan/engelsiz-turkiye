@@ -17,7 +17,7 @@ class TalkbackMainPage extends StatelessWidget {
       appBar: AppBar(
         title: Semantics(
           header: true,
-          child: const Text('Erişilebilir Türkiye - Ana Menü'),
+          child: const Text('Engelsiz Türkiye - Ana Menü'),
         ),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,

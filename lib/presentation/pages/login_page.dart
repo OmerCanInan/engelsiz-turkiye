@@ -76,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
               const Icon(Icons.accessibility_new, size: 80, color: Color(0xFF1A56BE)),
               const SizedBox(height: 16),
               const Text(
-                'Erişilebilir Türkiye',
+                'Engelsiz Türkiye',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),

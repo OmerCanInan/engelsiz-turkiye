@@ -591,8 +591,8 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       }
     });
 
-    // Her 2 saniyede bir DB'den sinyal koordinatlarını tazele
-    _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    // Her 1 saniyede bir DB'den sinyal koordinatlarını tazele
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _fetchSignals();
     });
   }

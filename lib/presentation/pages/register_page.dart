@@ -102,7 +102,7 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Erişilebilir Türkiye platformuna hoş geldiniz.',
+                'Engelsiz Türkiye platformuna hoş geldiniz.',
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 32),
