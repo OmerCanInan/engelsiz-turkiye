@@ -206,7 +206,7 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
       _positionStream = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.bestForNavigation,
-          distanceFilter: 0, // En ufak kıpırdamada anında tetikler
+          distanceFilter: 2, // 2 metrelik harekette tetikler (API limitine takılmamak için)
         ),
       ).listen((Position pos) {
         if (_signalId != null) {
@@ -502,10 +502,23 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
     _volunteerPositionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 0, // En ufak harekette tetikler
+        distanceFilter: 2, // 2 metre harekette tetikler (API limitini korumak için)
       ),
     ).listen((Position pos) {
-      _myPosition = pos;
+      if (!mounted) return;
+      
+      setState(() {
+        _myPosition = pos;
+        // Supabase beklemeden yerel listeyi milisaniyeler içinde anında güncelle
+        for (var sig in _activeSignals) {
+          double sigLat = (sig['latitude'] as num).toDouble();
+          double sigLng = (sig['longitude'] as num).toDouble();
+          sig['distance'] = Geolocator.distanceBetween(pos.latitude, pos.longitude, sigLat, sigLng);
+        }
+        // Anında yeniden sırala
+        _activeSignals.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
+      });
+
       final user = _supabase.auth.currentUser;
       if (user != null && _isListening) {
         _supabase.from('sos_volunteers').update({
@@ -515,8 +528,8 @@ class _SosVolunteerPageState extends State<SosVolunteerPage> {
       }
     });
 
-    // Her saniyede 1 kere sinyalleri güncelle (Eskiden 5 saniyeydi, şimdi süper hızlı)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    // Sadece yeni sinyal var mı diye kontrol etmek için 3 saniyede bir ping at
+    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       _fetchSignals();
     });
   }
