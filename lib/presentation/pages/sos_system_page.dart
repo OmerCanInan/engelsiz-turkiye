@@ -219,10 +219,17 @@ class _SosActivePageState extends State<SosActivePage> with SingleTickerProvider
         
         // 10 km (10000 metre) içindeyse bildirim at (Hackathon için esnetildi)
         if (distance <= 10000) {
+          String distanceText;
+          if (distance >= 1000) {
+            distanceText = '${(distance / 1000).toStringAsFixed(1)} kilometre';
+          } else {
+            distanceText = '${distance.toStringAsFixed(0)} metre';
+          }
+
           await _supabase.from('notifications').insert({
             'user_id': vol['user_id'],
             'title': 'ACİL: YAKININIZDA SOS SİNYALİ!',
-            'message': 'Yaklaşık ${(distance).toStringAsFixed(0)} metre yakınınızda bir engelli birey acil yardım istiyor!',
+            'message': 'Yaklaşık $distanceText yakınınızda bir engelli birey acil yardım istiyor!',
             'type': 'sos_alert'
           });
         }
